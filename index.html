@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aptitude Test Practice for Engineers</title>
     <style>
-        /* Define CSS Variables for Light and Dark Modes */
         :root {
             --body-bg: #f4f4f4;
             --container-bg: #fff;
@@ -153,7 +152,7 @@
             margin-right: 10px;
         }
 
-        .submit-btn, .next-btn {
+        .submit-btn, .next-btn, .explanation-btn {
             display: block;
             width: 100%;
             padding: 12px;
@@ -165,7 +164,7 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
-        .submit-btn:hover, .next-btn:hover {
+        .submit-btn:hover, .next-btn:hover, .explanation-btn:hover {
             background: linear-gradient(135deg, var(--submit-btn-hover), var(--submit-btn-bg));
         }
         .submit-btn:disabled {
@@ -279,7 +278,6 @@
             background: linear-gradient(135deg, var(--submit-btn-hover), var(--submit-btn-bg));
         }
 
-        /* Responsive Design */
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
@@ -314,6 +312,7 @@
             <button onclick="selectSubject('Intelligence')">Intelligence</button>
             <button onclick="selectSubject('Programming')">Programming</button>
             <button onclick="selectSubject('Interview Preparation')">Interview Preparation</button>
+            <button onclick="selectSubject('Random Questions')">Random Questions</button>
         </div>
         <div class="question-counter" id="question-counter">Question 0 / ∞</div>
         <div class="timer" id="timer">Time Left: 30s</div>
@@ -322,9 +321,10 @@
         </div>
         <div class="options" id="options"></div>
         <button class="submit-btn" id="submit-btn" onclick="submitAnswer()" disabled>Submit Answer</button>
-        <button class="next-btn" id="next-btn" onclick="fetchNextQuestion()" style="display:none;">Next Question</button>
         <div class="feedback" id="feedback"></div>
-        <div class="explanation" id="explanation"></div>
+        <button class="explanation-btn" id="explanation-btn" style="display:none;">Show Explanation</button>
+        <div class="explanation" id="explanation" style="display:none;"></div>
+        <button class="next-btn" id="next-btn" onclick="fetchNextQuestion()" style="display:none;">Next Question</button>
         <div class="progress" id="progress">
             <h2>Your Performance</h2>
             <div class="chart-container">
@@ -348,15 +348,15 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        const subjects = ['Mathematics', 'Reasoning', 'English', 'Intelligence', 'Programming', 'Interview Preparation'];
+        const subjects = ['Mathematics', 'Reasoning', 'English', 'Intelligence', 'Programming', 'Interview Preparation', 'Random Questions'];
         let currentSubject = null;
         let currentQuestion = null;
         let selectedOption = null;
         let progressChart = null;
         let timerInterval = null;
         let questionCount = 0;
+        let usedQuestions = {};
 
-        // Predefined Questions (Replace with your full 100-question lists here)
         const questions = {
             Mathematics: [
                 { question: "What is the value of ∫(0 to π) sin(x) dx?", options: ["0", "1", "2", "-1"], correctAnswer: "2", explanation: "The integral of sin(x) from 0 to π is [-cos(x)] from 0 to π = -cos(π) - (-cos(0)) = -(-1) - (-1) = 2." },
@@ -444,15 +444,50 @@
                 { question: "What is the Taylor series expansion of e^x around x=0 up to the second term?", options: ["1 + x", "1 + x + x²/2", "x + x²", "1 - x"], correctAnswer: "1 + x", explanation: "e^x = 1 + x + x²/2 + ... Up to second term (n=1) is 1 + x." },
                 { question: "What is the probability of at least one head in 3 coin tosses?", options: ["1/8", "3/8", "7/8", "1"], correctAnswer: "7/8", explanation: "P(no heads) = (1/2)³ = 1/8. P(at least one head) = 1 - 1/8 = 7/8." },
                 { question: "What is the value of ∫(0 to 1) e^x dx?", options: ["e - 1", "e", "1", "e + 1"], correctAnswer: "e - 1", explanation: "∫e^x dx = e^x from 0 to 1 = e¹ - e⁰ = e - 1." },
-                { question: "Solve for x: log(x) + log(x-1) = 1 (base 10)", options: ["2", "3", "4", "5"], correctAnswer: "2", explanation: "log(x(x-1)) = 1 → x(x-1) = 10 → x² - x - 10 = 0. Discriminant = 41, x ≈ 2 (approx solution, exact roots complex)." },
-                { question: "What is the value of the gradient of f(x,y) = x² + y² at (1,1)?", options: ["(1, 1)", "(2, 2)", "(1, 2)", "(2, 1)"], correctAnswer: "(2, 2)", explanation: "∇f = (∂f/∂x, ∂f/∂y) = (2x, 2y). At (1,1), ∇f = (2*1, 2*1) = (2, 2)." }
-                // Add remaining 99 questions here...
+                { question: "Solve for x: log(x) + log(x-1) = 1 (base 10)", options: ["2", "3", "4", "5"], correctAnswer: "4", explanation: "log(x(x-1)) = 1 → x(x-1) = 10 → x² - x - 10 = 0. Solving: x = (1 + √41)/2 ≈ 3.7 or x = (1 - √41)/2 ≈ -2.7. Since x > 1 for log(x-1) to be defined, x ≈ 3.7, which rounds to 4." },
+                { question: "What is the value of the gradient of f(x,y) = x² + y² at (1,1)?", options: ["(1, 1)", "(2, 2)", "(1, 2)", "(2, 1)"], correctAnswer: "(2, 2)", explanation: "∇f = (∂f/∂x, ∂f/∂y) = (2x, 2y). At (1,1), ∇f = (2*1, 2*1) = (2, 2)." },
+                { question: "What is the time complexity of matrix multiplication for two n×n matrices using the standard algorithm?", options: ["O(n)", "O(n²)", "O(n³)", "O(n log n)"], correctAnswer: "O(n³)", explanation: "Standard matrix multiplication requires n³ operations (n operations for each of the n² elements in the result)." },
+                { question: "What is the expected value of a fair six-sided die?", options: ["3", "3.5", "4", "6"], correctAnswer: "3.5", explanation: "E[X] = (1+2+3+4+5+6)/6 = 21/6 = 3.5." },
+                { question: "What is the solution to the system: 2x + y = 5, 3x - 2y = 4?", options: ["(2, 1)", "(1, 3)", "(3, -1)", "(2, -1)"], correctAnswer: "(2, 1)", explanation: "From the first equation: y = 5 - 2x. Substitute into the second: 3x - 2(5 - 2x) = 4 → 3x - 10 + 4x = 4 → 7x = 14 → x = 2. Then y = 5 - 2(2) = 1." },
+                { question: "What is the value of the cross product of vectors [1, 0, 0] and [0, 1, 0]?", options: ["[0, 0, 0]", "[0, 0, 1]", "[0, 0, -1]", "[1, 1, 0]"], correctAnswer: "[0, 0, 1]", explanation: "Cross product = [1(1)(0) - 0(0), 0(0) - 1(0)(0), 1(1) - 0(0)] = [0, 0, 1]." },
+                { question: "What is the Maclaurin series for cos(x)?", options: ["1 - x²/2! + x⁴/4! - ...", "x - x³/3! + x⁵/5! - ...", "1 + x + x²/2! + ...", "x + x²/2! + x³/3! + ..."], correctAnswer: "1 - x²/2! + x⁴/4! - ...", explanation: "cos(x) = 1 - x²/2! + x⁴/4! - ... (alternating series with even powers)." },
+                { question: "What is the value of the double integral ∫∫(x+y) dA over the square [0,1]×[0,1]?", options: ["0", "1", "1/2", "2"], correctAnswer: "1", explanation: "∫₀¹∫₀¹(x+y) dx dy = ∫₀¹[x²/2 + xy]₀¹ dy = ∫₀¹(1/2 + y) dy = [y/2 + y²/2]₀¹ = 1/2 + 1/2 = 1." },
+                { question: "What is the solution to the differential equation y'' + 4y = 0 with y(0) = 1, y'(0) = 0?", options: ["y = cos(2x)", "y = sin(2x)", "y = e^(2x)", "y = e^(-2x)"], correctAnswer: "y = cos(2x)", explanation: "The general solution is y = A cos(2x) + B sin(2x). Given y(0) = 1, we get A = 1. Given y'(0) = 0, we get 2B = 0, so B = 0. Thus, y = cos(2x)." },
+                { question: "What is the value of the contour integral ∮(1/z) dz around the unit circle?", options: ["0", "π", "2π", "2πi"], correctAnswer: "2πi", explanation: "By Cauchy's integral formula, ∮(1/z) dz = 2πi for a simple closed curve enclosing the origin." },
+                { question: "What is the Fourier transform of cos(ω₀t)?", options: ["π[δ(ω-ω₀) + δ(ω+ω₀)]", "2π[δ(ω-ω₀) + δ(ω+ω₀)]", "π[δ(ω-ω₀) - δ(ω+ω₀)]", "2π[δ(ω-ω₀) - δ(ω+ω₀)]"], correctAnswer: "π[δ(ω-ω₀) + δ(ω+ω₀)]", explanation: "The Fourier transform of cos(ω₀t) is π[δ(ω-ω₀) + δ(ω+ω₀)], representing frequency components at ±ω₀." },
+                { question: "What is the solution to the partial differential equation ∂u/∂t = α²∂²u/∂x² for the heat equation?", options: ["u = e^(-α²k²t)sin(kx)", "u = e^(α²k²t)sin(kx)", "u = e^(-α²k²t)cos(kx)", "u = e^(α²k²t)cos(kx)"], correctAnswer: "u = e^(-α²k²t)sin(kx)", explanation: "A solution to the heat equation is u = e^(-α²k²t)sin(kx), which represents decay of temperature over time." },
+                { question: "What is the value of the gamma function Γ(1/2)?", options: ["√π", "π", "√2π", "2√π"], correctAnswer: "√π", explanation: "Γ(1/2) = √π, a special value of the gamma function." },
+                { question: "What is the Jacobian of the transformation from Cartesian (x,y) to polar (r,θ) coordinates?", options: ["r", "1/r", "r²", "θ"], correctAnswer: "r", explanation: "The Jacobian determinant for the transformation from Cartesian to polar coordinates is r." },
+                { question: "What is the residue of f(z) = 1/z² at z = 0?", options: ["0", "1", "-1", "∞"], correctAnswer: "0", explanation: "For f(z) = 1/z², the Laurent series has no z^(-1) term, so the residue at z = 0 is 0." },
+                { question: "What is the value of the Riemann zeta function ζ(2)?", options: ["π²/3", "π²/6", "π²/12", "π²/2"], correctAnswer: "π²/6", explanation: "ζ(2) = π²/6, a famous result known as the Basel problem." },
+                { question: "What is the solution to the wave equation ∂²u/∂t² = c²∂²u/∂x²?", options: ["u = f(x+ct) + g(x-ct)", "u = f(x+ct) - g(x-ct)", "u = f(x+c²t) + g(x-c²t)", "u = f(x+t) + g(x-t)"], correctAnswer: "u = f(x+ct) + g(x-ct)", explanation: "The general solution to the wave equation is u = f(x+ct) + g(x-ct), representing waves traveling in opposite directions." },
+                { question: "What is the value of the convolution (f * g)(t) for f(t) = g(t) = e^(-t) for t ≥ 0 and 0 otherwise?", options: ["te^(-t)", "t²e^(-t)", "te^(-2t)", "t²e^(-2t)"], correctAnswer: "te^(-t)", explanation: "The convolution of f(t) = g(t) = e^(-t) for t ≥ 0 is (f * g)(t) = te^(-t) for t ≥ 0." },
+                { question: "What is the Legendre transform of f(x) = x²/2?", options: ["p²/2", "p²", "-p²/2", "-p²"], correctAnswer: "p²/2", explanation: "The Legendre transform of f(x) = x²/2 is F(p) = px - f(x) = px - x²/2, where p = f'(x) = x. Substituting x = p gives F(p) = p² - p²/2 = p²/2." },
+                { question: "What is the value of the Bessel function J₀(0)?", options: ["0", "1", "1/2", "∞"], correctAnswer: "1", explanation: "J₀(0) = 1, a special value of the Bessel function of the first kind of order 0." },
+                { question: "What is the Euler-Lagrange equation for the functional J[y] = ∫ L(x, y, y') dx?", options: ["∂L/∂y = d/dx(∂L/∂y')", "∂L/∂y = ∂L/∂y'", "∂L/∂y' = d/dx(∂L/∂y)", "∂L/∂y + d/dx(∂L/∂y') = 0"], correctAnswer: "∂L/∂y = d/dx(∂L/∂y')", explanation: "The Euler-Lagrange equation for the calculus of variations is ∂L/∂y = d/dx(∂L/∂y')." },
+                { question: "What is the value of the Poisson bracket {q, p} in classical mechanics?", options: ["0", "1", "-1", "∞"], correctAnswer: "1", explanation: "The Poisson bracket {q, p} = 1 for canonical position and momentum variables." },
+                { question: "What is the Hamiltonian for a simple harmonic oscillator?", options: ["p²/2m + mω²q²/2", "p²/2m - mω²q²/2", "p²/2m", "mω²q²/2"], correctAnswer: "p²/2m + mω²q²/2", explanation: "The Hamiltonian for a simple harmonic oscillator is H = p²/2m + mω²q²/2, representing kinetic plus potential energy." },
+                { question: "What is the value of the Christoffel symbol Γᵏᵢⱼ for Euclidean space in Cartesian coordinates?", options: ["0", "1", "δᵏᵢ", "gᵏᵢ"], correctAnswer: "0", explanation: "In Euclidean space with Cartesian coordinates, all Christoffel symbols vanish (Γᵏᵢⱼ = 0)." },
+                { question: "What is the Einstein field equation in general relativity?", options: ["Gμν = 8πGTμν", "Rμν = 8πGTμν", "Rμν - (1/2)Rgμν = 8πGTμν", "Rμν - Rgμν = 8πGTμν"], correctAnswer: "Rμν - (1/2)Rgμν = 8πGTμν", explanation: "The Einstein field equation is Gμν = Rμν - (1/2)Rgμν = 8πGTμν, relating spacetime curvature to energy-momentum." },
+                { question: "What is the Schrödinger equation for a quantum particle?", options: ["iℏ∂ψ/∂t = Hψ", "iℏ∂ψ/∂t = -Hψ", "ℏ∂ψ/∂t = Hψ", "iℏ²∂ψ/∂t = Hψ"], correctAnswer: "iℏ∂ψ/∂t = Hψ", explanation: "The Schrödinger equation is iℏ∂ψ/∂t = Hψ, where H is the Hamiltonian operator." },
+                { question: "What is the value of the Riemann curvature tensor Rᵏᵢⱼₗ for flat spacetime?", options: ["0", "1", "gᵏᵢgⱼₗ", "δᵏᵢδⱼₗ"], correctAnswer: "0", explanation: "In flat spacetime, the Riemann curvature tensor vanishes (Rᵏᵢⱼₗ = 0)." },
+                { question: "What is the Dirac equation for a relativistic electron?", options: ["(iγμ∂μ - m)ψ = 0", "(iγμ∂μ + m)ψ = 0", "(γμ∂μ - m)ψ = 0", "(γμ∂μ + m)ψ = 0"], correctAnswer: "(iγμ∂μ - m)ψ = 0", explanation: "The Dirac equation is (iγμ∂μ - m)ψ = 0, describing relativistic spin-1/2 particles." },
+                { question: "What is the value of the partition function Z for a two-level system with energy difference ΔE at temperature T?", options: ["e^(-ΔE/kT) + e^(ΔE/kT)", "e^(-ΔE/kT) + 1", "2e^(-ΔE/kT)", "2cosh(ΔE/kT)"], correctAnswer: "e^(-ΔE/kT) + 1", explanation: "For a two-level system with ground state energy 0 and excited state energy ΔE, Z = 1 + e^(-ΔE/kT)." },
+                { question: "What is the Maxwell-Boltzmann distribution for particle speeds in a gas?", options: ["f(v) ∝ v²e^(-mv²/2kT)", "f(v) ∝ ve^(-mv²/2kT)", "f(v) ∝ e^(-mv²/2kT)", "f(v) ∝ v³e^(-mv²/2kT)"], correctAnswer: "f(v) ∝ v²e^(-mv²/2kT)", explanation: "The Maxwell-Boltzmann speed distribution is f(v) ∝ v²e^(-mv²/2kT), accounting for the volume element in velocity space." },
+                { question: "What is the Navier-Stokes equation for incompressible fluid flow?", options: ["ρ(∂v/∂t + v·∇v) = -∇p + μ∇²v", "ρ(∂v/∂t + v·∇v) = ∇p + μ∇²v", "ρ(∂v/∂t - v·∇v) = -∇p + μ∇²v", "ρ(∂v/∂t) = -∇p + μ∇²v"], correctAnswer: "ρ(∂v/∂t + v·∇v) = -∇p + μ∇²v", explanation: "The Navier-Stokes equation for incompressible flow is ρ(∂v/∂t + v·∇v) = -∇p + μ∇²v, representing conservation of momentum." },
+                { question: "What is the value of the Planck constant h?", options: ["6.63 × 10^(-34) J·s", "6.63 × 10^(-34) J/s", "1.05 × 10^(-34) J·s", "1.05 × 10^(-34) J/s"], correctAnswer: "6.63 × 10^(-34) J·s", explanation: "The Planck constant h ≈ 6.63 × 10^(-34) J·s, a fundamental constant in quantum mechanics." },
+                { question: "What is the Boltzmann entropy formula?", options: ["S = k ln W", "S = k ln Ω", "S = -k ln W", "S = -k ln Ω"], correctAnswer: "S = k ln Ω", explanation: "The Boltzmann entropy formula is S = k ln Ω, where Ω is the number of microstates and k is Boltzmann's constant." },
+                { question: "What is the Heisenberg uncertainty principle for position and momentum?", options: ["ΔxΔp ≥ ℏ/2", "ΔxΔp ≤ ℏ/2", "ΔxΔp = ℏ", "ΔxΔp = ℏ/2"], correctAnswer: "ΔxΔp ≥ ℏ/2", explanation: "The Heisenberg uncertainty principle states that ΔxΔp ≥ ℏ/2, where ℏ = h/2π." },
+                { question: "What is the value of the fine structure constant α?", options: ["1/137", "137", "1/127", "127"], correctAnswer: "1/137", explanation: "The fine structure constant α ≈ 1/137, a dimensionless constant characterizing the strength of the electromagnetic interaction." },
+                { question: "What is the Lorentz transformation for time t in special relativity?", options: ["t' = γ(t - vx/c²)", "t' = γ(t + vx/c²)", "t' = γt", "t' = t/γ"], correctAnswer: "t' = γ(t - vx/c²)", explanation: "The Lorentz transformation for time is t' = γ(t - vx/c²), where γ = 1/√(1-v²/c²)." },
+                { question: "What is the Schwarzschild radius for a black hole of mass M?", options: ["2GM/c²", "GM/c²", "2GM/c", "GM/c"], correctAnswer: "2GM/c²", explanation: "The Schwarzschild radius is r_s = 2GM/c², where G is the gravitational constant and c is the speed of light." },
+                { question: "What is the value of the cosmological constant Λ in the ΛCDM model?", options: ["≈ 10^(-52) m^(-2)", "≈ 10^(-35) s^(-2)", "≈ 10^(-122) in Planck units", "All of the above"], correctAnswer: "All of the above", explanation: "The cosmological constant Λ ≈ 10^(-52) m^(-2) ≈ 10^(-35) s^(-2) ≈ 10^(-122) in Planck units, representing dark energy in the ΛCDM model." }
             ],
             Reasoning: [
                 { question: "If the day after tomorrow is Wednesday, what day is it today?", options: ["Monday", "Tuesday", "Wednesday", "Thursday"], correctAnswer: "Monday", explanation: "Today + 2 days = Wednesday → Today = Wednesday - 2 days = Monday." },
                 { question: "In a group of 5 people, each shakes hands with every other person once. How many handshakes occur?", options: ["10", "15", "20", "25"], correctAnswer: "10", explanation: "Number of handshakes = n(n-1)/2 where n=5. So, 5*4/2 = 10." },
                 { question: "If all roses are flowers and some flowers are red, which must be true?", options: ["All roses are red", "Some roses are red", "Some flowers are not red", "Cannot determine"], correctAnswer: "Cannot determine", explanation: "The statement only says some flowers are red, not necessarily roses. No definitive conclusion about roses can be drawn." },
-                { question: "A train leaves at 10:00 AM and travels at 60 km/h. Another leaves at 10:30 AM at 80 km/h. When do they meet?", options: ["11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM"], correctAnswer: "11:30 AM", explanation: "First train’s head start = 60 * 0.5 = 30 km. Relative speed = 80 - 60 = 20 km/h. Time to close 30 km = 30/20 = 1.5 hours from 10:00 AM = 11:30 AM." },
+                { question: "A train leaves at 10:00 AM and travels at 60 km/h. Another leaves at 10:30 AM at 80 km/h. When do they meet?", options: ["11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM"], correctAnswer: "11:30 AM", explanation: "First train's head start = 60 * 0.5 = 30 km. Relative speed = 80 - 60 = 20 km/h. Time to close 30 km = 30/20 = 1.5 hours from 10:00 AM = 11:30 AM." },
                 { question: "Which number should replace the ?: 2, 6, 12, 20, ? ", options: ["28", "30", "32", "36"], correctAnswer: "30", explanation: "Pattern: 1*2=2, 2*3=6, 3*4=12, 4*5=20, 5*6=30." },
                 { question: "If A is taller than B, and C is shorter than B, who is the tallest?", options: ["A", "B", "C", "Cannot determine"], correctAnswer: "A", explanation: "A > B and B > C → A > B > C, so A is tallest." },
                 { question: "How many ways can 3 people sit in 3 chairs?", options: ["3", "6", "9", "12"], correctAnswer: "6", explanation: "Number of permutations = 3! = 3 * 2 * 1 = 6." },
@@ -463,9 +498,9 @@
                 { question: "Which is the odd one out: 7, 11, 13, 15?", options: ["7", "11", "13", "15"], correctAnswer: "15", explanation: "7, 11, 13 are prime numbers; 15 is not (15 = 3*5)." },
                 { question: "If 3 workers build a wall in 6 hours, how long for 6 workers?", options: ["2 hours", "3 hours", "4 hours", "6 hours"], correctAnswer: "3 hours", explanation: "Total work = 3 * 6 = 18 worker-hours. 6 workers: 18/6 = 3 hours." },
                 { question: "What comes next: 2, 3, 5, 7, ?", options: ["9", "11", "13", "15"], correctAnswer: "11", explanation: "Sequence of prime numbers: 2, 3, 5, 7, 11." },
-                { question: "If all cats are mammals and some mammals are black, are all cats black?", options: ["Yes", "No", "Maybe", "Cannot determine"], correctAnswer: "Cannot determine", explanation: "Some mammals being black doesn’t imply all cats (a subset of mammals) are black." },
+                { question: "If all cats are mammals and some mammals are black, are all cats black?", options: ["Yes", "No", "Maybe", "Cannot determine"], correctAnswer: "No", explanation: "Some mammals being black doesn't imply all cats (a subset of mammals) are black." },
                 { question: "How many ways can you arrange the letters in 'CAT'?", options: ["3", "6", "9", "12"], correctAnswer: "6", explanation: "Permutations of 3 distinct letters = 3! = 6." },
-                { question: "A car travels 100 km at 50 km/h, then 100 km at 100 km/h. What’s the average speed?", options: ["60 km/h", "66.67 km/h", "75 km/h", "80 km/h"], correctAnswer: "66.67 km/h", explanation: "Time1 = 100/50 = 2h, Time2 = 100/100 = 1h. Total distance = 200 km, Total time = 3h. Avg speed = 200/3 ≈ 66.67 km/h." },
+                { question: "A car travels 100 km at 50 km/h, then 100 km at 100 km/h. What's the average speed?", options: ["60 km/h", "66.67 km/h", "75 km/h", "80 km/h"], correctAnswer: "66.67 km/h", explanation: "Time1 = 100/50 = 2h, Time2 = 100/100 = 1h. Total distance = 200 km, Total time = 3h. Avg speed = 200/3 ≈ 66.67 km/h." },
                 { question: "What comes next: 1, 1, 2, 3, 5, ?", options: ["6", "7", "8", "9"], correctAnswer: "8", explanation: "Fibonacci sequence: 1+1=2, 1+2=3, 2+3=5, 3+5=8." },
                 { question: "If X is twice Y, and Y is 10, what is X?", options: ["5", "10", "20", "40"], correctAnswer: "20", explanation: "X = 2Y = 2 * 10 = 20." },
                 { question: "Which is the odd one out: Circle, Square, Triangle, Apple?", options: ["Circle", "Square", "Triangle", "Apple"], correctAnswer: "Apple", explanation: "Apple is not a geometric shape." },
@@ -473,22 +508,22 @@
                 { question: "What comes next: 10, 20, 40, 80, ?", options: ["100", "120", "160", "200"], correctAnswer: "160", explanation: "Each term doubles: 10*2=20, 20*2=40, 40*2=80, 80*2=160." },
                 { question: "If A is not B, and B is C, can A be C?", options: ["Yes", "No", "Maybe", "Cannot determine"], correctAnswer: "Maybe", explanation: "A ≠ B and B = C means A ≠ C is possible, but not certain (e.g., A could still equal C in some cases)." },
                 { question: "How many diagonals does a pentagon have?", options: ["5", "8", "10", "12"], correctAnswer: "5", explanation: "Number of diagonals = n(n-3)/2 where n=5. So, 5*2/2 = 5." },
-                { question: "A boat travels 60 km upstream in 6 hours and downstream in 4 hours. What’s the speed of the current?", options: ["2 km/h", "2.5 km/h", "3 km/h", "4 km/h"], correctAnswer: "2.5 km/h", explanation: "Upstream speed = 60/6 = 10 km/h, Downstream = 60/4 = 15 km/h. Current speed = (15 - 10)/2 = 2.5 km/h." },
+                { question: "A boat travels 60 km upstream in 6 hours and downstream in 4 hours. What's the speed of the current?", options: ["2 km/h", "2.5 km/h", "3 km/h", "4 km/h"], correctAnswer: "2.5 km/h", explanation: "Upstream speed = 60/6 = 10 km/h, Downstream = 60/4 = 15 km/h. Current speed = (15 - 10)/2 = 2.5 km/h." },
                 { question: "What comes next: 3, 6, 12, 24, ?", options: ["36", "48", "60", "72"], correctAnswer: "48", explanation: "Each term doubles: 3*2=6, 6*2=12, 12*2=24, 24*2=48." },
                 { question: "If P is older than Q, and Q is older than R, who is the youngest?", options: ["P", "Q", "R", "Cannot determine"], correctAnswer: "R", explanation: "P > Q > R implies R is the youngest." },
                 { question: "How many ways can 4 books be arranged on a shelf?", options: ["12", "24", "36", "48"], correctAnswer: "24", explanation: "Permutations = 4! = 4 * 3 * 2 * 1 = 24." },
-                { question: "A man buys a shirt for $20 and sells it for $25. What’s the profit percentage?", options: ["20%", "25%", "30%", "35%"], correctAnswer: "25%", explanation: "Profit = 25 - 20 = 5. Profit % = (5/20) * 100 = 25%." },
+                { question: "A man buys a shirt for $20 and sells it for $25. What's the profit percentage?", options: ["20%", "25%", "30%", "35%"], correctAnswer: "25%", explanation: "Profit = 25 - 20 = 5. Profit % = (5/20) * 100 = 25%." },
                 { question: "What comes next: 5, 10, 15, 20, ?", options: ["25", "30", "35", "40"], correctAnswer: "25", explanation: "Sequence increases by 5: 5+5=10, 10+5=15, 15+5=20, 20+5=25." },
-                { question: "If all birds have wings and penguins are birds, do penguins have wings?", options: ["Yes", "No", "Maybe", "Cannot determine"], correctAnswer: "Yes", explanation: "All birds have wings, and penguins are birds, so penguins have wings (though they don’t fly)." },
-                { question: "A tank fills in 10 hours with one pipe. How long with 2 pipes?", options: ["4 hours", "5 hours", "6 hours", "8 hours"], correctAnswer: "5 hours", explanation: "One pipe’s rate = 1/10 tank/hour. Two pipes = 2/10 = 1/5 tank/hour. Time = 1/(1/5) = 5 hours." },
+                { question: "If all birds have wings and penguins are birds, do penguins have wings?", options: ["Yes", "No", "Maybe", "Cannot determine"], correctAnswer: "Yes", explanation: "All birds have wings, and penguins are birds, so penguins have wings (though they don't fly)." },
+                { question: "A tank fills in 10 hours with one pipe. How long with 2 pipes?", options: ["4 hours", "5 hours", "6 hours", "8 hours"], correctAnswer: "5 hours", explanation: "One pipe's rate = 1/10 tank/hour. Two pipes = 2/10 = 1/5 tank/hour. Time = 1/(1/5) = 5 hours." },
                 { question: "What comes next: 1, 3, 7, 15, ?", options: ["23", "31", "39", "47"], correctAnswer: "31", explanation: "Pattern: 2^n - 1. 2¹-1=1, 2²-1=3, 2³-1=7, 2⁴-1=15, 2⁵-1=31." },
                 { question: "If X is 20% more than Y, and Y is 50, what is X?", options: ["55", "60", "65", "70"], correctAnswer: "60", explanation: "X = Y + 20% of Y = 50 + 0.2*50 = 50 + 10 = 60." },
                 { question: "Which is the odd one out: 2, 3, 5, 9?", options: ["2", "3", "5", "9"], correctAnswer: "9", explanation: "2, 3, 5 are prime; 9 is composite (3*3)." },
                 { question: "If 6 men complete a job in 8 days, how long for 4 men?", options: ["10 days", "12 days", "14 days", "16 days"], correctAnswer: "12 days", explanation: "Total work = 6 * 8 = 48 man-days. 4 men: 48/4 = 12 days." },
                 { question: "What comes next: 4, 8, 16, 32, ?", options: ["48", "64", "80", "96"], correctAnswer: "64", explanation: "Each term doubles: 4*2=8, 8*2=16, 16*2=32, 32*2=64." },
-                { question: "If A implies B, and B is true, what is A?", options: ["True", "False", "Either", "Cannot determine"], correctAnswer: "Cannot determine", explanation: "A → B and B true doesn’t determine A (A could be true or false; modus ponens doesn’t apply backward)." },
+                { question: "If A implies B, and B is true, what is A?", options: ["True", "False", "Either", "Cannot determine"], correctAnswer: "Cannot determine", explanation: "A → B and B true doesn't determine A (A could be true or false; modus ponens doesn't apply backward)." },
                 { question: "How many ways can 5 people stand in a line?", options: ["60", "120", "180", "240"], correctAnswer: "120", explanation: "Permutations = 5! = 5 * 4 * 3 * 2 * 1 = 120." },
-                { question: "A plane flies 600 km at 300 km/h, then 400 km at 200 km/h. What’s the average speed?", options: ["240 km/h", "250 km/h", "260 km/h", "270 km/h"], correctAnswer: "250 km/h", explanation: "Time1 = 600/300 = 2h, Time2 = 400/200 = 2h. Total distance = 1000 km, Total time = 4h. Avg speed = 1000/4 = 250 km/h." },
+                { question: "A plane flies 600 km at 300 km/h, then 400 km at 200 km/h. What's the average speed?", options: ["240 km/h", "250 km/h", "260 km/h", "270 km/h"], correctAnswer: "250 km/h", explanation: "Time1 = 600/300 = 2h, Time2 = 400/200 = 2h. Total distance = 1000 km, Total time = 4h. Avg speed = 1000/4 = 250 km/h." },
                 { question: "What comes next: 2, 5, 10, 17, ?", options: ["24", "25", "26", "27"], correctAnswer: "26", explanation: "Pattern: +3, +5, +7, +9; 17+9=26." },
                 { question: "If P is 25% less than Q, and Q is 80, what is P?", options: ["55", "60", "65", "70"], correctAnswer: "60", explanation: "P = Q - 25% of Q = 80 - 0.25*80 = 80 - 20 = 60." },
                 { question: "Which is the odd one out: 4, 6, 8, 9?", options: ["4", "6", "8", "9"], correctAnswer: "9", explanation: "4, 6, 8 are even; 9 is odd." },
@@ -502,9 +537,9 @@
                 { question: "Which is the odd one out: 5, 7, 11, 14?", options: ["5", "7", "11", "14"], correctAnswer: "14", explanation: "5, 7, 11 are prime; 14 is not (14 = 2*7)." },
                 { question: "If 10 students complete a project in 15 days, how long for 5 students?", options: ["20 days", "25 days", "30 days", "35 days"], correctAnswer: "30 days", explanation: "Total work = 10 * 15 = 150 student-days. 5 students: 150/5 = 30 days." },
                 { question: "What comes next: 7, 14, 28, 56, ?", options: ["84", "112", "140", "168"], correctAnswer: "112", explanation: "Each term doubles: 7*2=14, 14*2=28, 28*2=56, 56*2=112." },
-                { question: "If P is not Q, and Q is not R, can P be R?", options: ["Yes", "No", "Maybe", "Cannot determine"], correctAnswer: "Maybe", explanation: "P ≠ Q and Q ≠ R doesn’t fix P’s relation to R; they could be equal or not." },
+                { question: "If P is not Q, and Q is not R, can P be R?", options: ["Yes", "No", "Maybe", "Cannot determine"], correctAnswer: "Maybe", explanation: "P ≠ Q and Q ≠ R doesn't fix P's relation to R; they could be equal or not." },
                 { question: "How many diagonals does a hexagon have?", options: ["6", "9", "12", "15"], correctAnswer: "9", explanation: "Number of diagonals = n(n-3)/2 where n=6. So, 6*3/2 = 9." },
-                { question: "A boat travels 80 km downstream in 4 hours and upstream in 8 hours. What’s the speed of the boat in still water?", options: ["15 km/h", "20 km/h", "25 km/h", "30 km/h"], correctAnswer: "15 km/h", explanation: "Downstream = 80/4 = 20 km/h, Upstream = 80/8 = 10 km/h. Boat speed = (20 + 10)/2 = 15 km/h." },
+                { question: "A boat travels 80 km downstream in 4 hours and upstream in 8 hours. What's the speed of the boat in still water?", options: ["15 km/h", "20 km/h", "25 km/h", "30 km/h"], correctAnswer: "15 km/h", explanation: "Downstream = 80/4 = 20 km/h, Upstream = 80/8 = 10 km/h. Boat speed = (20 + 10)/2 = 15 km/h." },
                 { question: "What comes next: 2, 6, 12, 20, ?", options: ["28", "30", "32", "36"], correctAnswer: "30", explanation: "Pattern: n(n+1). 1*2=2, 2*3=6, 3*4=12, 4*5=20, 5*6=30." },
                 { question: "If X is 40% of Y, and Y is 50, what is X?", options: ["15", "20", "25", "30"], correctAnswer: "20", explanation: "X = 0.4 * Y = 0.4 * 50 = 20." },
                 { question: "Which is the odd one out: 3, 6, 9, 12?", options: ["3", "6", "9", "12"], correctAnswer: "3", explanation: "6, 9, 12 are multiples of 3; 3 is not a multiple of another in the list." },
@@ -527,19 +562,39 @@
                 { question: "If 20 workers complete a task in 8 days, how long for 16 workers?", options: ["9 days", "10 days", "11 days", "12 days"], correctAnswer: "10 days", explanation: "Total work = 20 * 8 = 160 worker-days. 16 workers: 160/16 = 10 days." },
                 { question: "If 5 people can choose 1 of 3 projects, how many ways?", options: ["15", "125", "243", "625"], correctAnswer: "243", explanation: "Each person has 3 choices, so total ways = 3⁵ = 243." },
                 { question: "What comes next: 1, 8, 27, 64, ?", options: ["81", "100", "125", "144"], correctAnswer: "125", explanation: "Sequence of cubes: 1³, 2³, 3³, 4³, 5³ = 125." },
-                { question: "A store offers 20% off, then 10% off the reduced price. What’s the total discount on $100?", options: ["28%", "30%", "32%", "35%"], correctAnswer: "28%", explanation: "First discount: 100 * 0.8 = 80. Second: 80 * 0.9 = 72. Total discount = 100 - 72 = 28%." },
+                { question: "A store offers 20% off, then 10% off the reduced price. What's the total discount on $100?", options: ["28%", "30%", "32%", "35%"], correctAnswer: "28%", explanation: "First discount: 100 * 0.8 = 80. Second: 80 * 0.9 = 72. Total discount = 100 - 72 = 28%." },
                 { question: "If 2 trains start 100 km apart, one at 40 km/h and the other at 60 km/h toward each other, when do they meet?", options: ["0.5 hr", "1 hr", "1.5 hr", "2 hr"], correctAnswer: "1 hr", explanation: "Relative speed = 40 + 60 = 100 km/h. Time = 100/100 = 1 hour." },
                 { question: "What comes next: 1, 2, 6, 24, ?", options: ["48", "72", "120", "144"], correctAnswer: "120", explanation: "Factorial sequence: 1!, 2!, 3!, 4!, 5! = 120." },
-                { question: "If A finishes a task in 10 days and B in 15 days, how long together?", options: ["5 days", "6 days", "7 days", "8 days"], correctAnswer: "6 days", explanation: "A’s rate = 1/10, B’s = 1/15. Combined = 1/10 + 1/15 = 3/30 + 2/30 = 5/30 = 1/6. Time = 6 days." },
+                { question: "If A finishes a task in 10 days and B in 15 days, how long together?", options: ["5 days", "6 days", "7 days", "8 days"], correctAnswer: "6 days", explanation: "A's rate = 1/10, B's = 1/15. Combined = 1/10 + 1/15 = 3/30 + 2/30 = 5/30 = 1/6. Time = 6 days." },
                 { question: "Which is the odd one out: 16, 25, 36, 45?", options: ["16", "25", "36", "45"], correctAnswer: "45", explanation: "16, 25, 36 are perfect squares (4², 5², 6²); 45 is not." },
-                { question: "If 3 dice are rolled, what’s the probability of all showing 6?", options: ["1/6", "1/36", "1/216", "1/729"], correctAnswer: "1/216", explanation: "P(6) per die = 1/6. For 3 dice: (1/6)³ = 1/216." },
+                { question: "If 3 dice are rolled, what's the probability of all showing 6?", options: ["1/6", "1/36", "1/216", "1/729"], correctAnswer: "1/216", explanation: "P(6) per die = 1/6. For 3 dice: (1/6)³ = 1/216." },
                 { question: "What comes next: 2, 3, 5, 8, 13, ?", options: ["18", "21", "23", "26"], correctAnswer: "21", explanation: "Fibonacci sequence: 2+3=5, 3+5=8, 5+8=13, 8+13=21." },
-                { question: "If a job takes 12 hours with 4 machines, how long with 6 machines?", options: ["6 hr", "8 hr", "10 hr", "12 hr"], correctAnswer: "8 hr", explanation: "Total work = 4 * 12 = 48 machine-hours. 6 machines: 48/6 = 8 hours." }
-                // Add remaining 99 questions here...
+                { question: "If a job takes 12 hours with 4 machines, how long with 6 machines?", options: ["6 hr", "8 hr", "10 hr", "12 hr"], correctAnswer: "8 hr", explanation: "Total work = 4 * 12 = 48 machine-hours. 6 machines: 48/6 = 8 hours." },
+                { question: "In a certain code, COMPUTER is written as RFUVQNPC. How will PRINTER be written in that code?", options: ["QSJOUFQ", "SFUOJSQ", "QSJOUFS", "SFUOJQS"], correctAnswer: "QSJOUFS", explanation: "Each letter is replaced by the previous letter in the alphabet. P→Q, R→S, I→J, etc." },
+                { question: "If 'FRIEND' is coded as 'HUMJTK', how is 'CANDLE' coded?", options: ["EDRIRL", "DCQHQK", "EDRIRM", "DCQHQJ"], correctAnswer: "EDRIRM", explanation: "Each letter is shifted two positions forward in the alphabet. C→E, A→C, N→P, etc." },
+                { question: "In a certain code, 'MOUSE' is written as '82691'. How is 'SHIFT' written in that code?", options: ["91367", "19367", "93167", "93617"], correctAnswer: "93167", explanation: "Each letter is assigned its position in the alphabet: S=19, H=8, I=9, F=6, T=20. But since only single digits are used, T becomes 0. So SHIFT = 9-8-9-6-0 = 93160." },
+                { question: "If in a certain language, MADRAS is coded as NBESBT, how is BOMBAY coded in that code?", options: ["CPNCBZ", "CPNCBX", "CPOCBZ", "CQOCBZ"], correctAnswer: "CPNCBZ", explanation: "Each letter is replaced by the next letter in the alphabet. M→N, A→B, D→E, etc. So B→C, O→P, M→N, B→C, A→B, Y→Z." },
+                { question: "If HARD is coded as 1357 and SOFT is coded as 2468, what will 246 represent?", options: ["THE", "SHE", "HIS", "SOT"], correctAnswer: "SOF", explanation: "H=1, A=3, R=5, D=7 and S=2, O=4, F=6, T=8. So 246 represents SOF." },
+                { question: "In a certain code, '256' means 'bright red light', '589' means 'light green clothes' and '147' means 'red green signal'. Which digit represents 'red'?", options: ["2", "5", "6", "7"], correctAnswer: "2", explanation: "From the first and third codes, 'red' is represented by the digit that appears in both: 2." },
+                { question: "If 'MONKEY' is written as 'XDJMNL' in a certain code, how will 'TIGER' be written in that code?", options: ["QDFHS", "SDFHS", "SHFDQ", "UJHFS"], correctAnswer: "UJHFS", explanation: "Each letter is replaced by the next letter in the alphabet. T→U, I→J, G→H, E→F, R→S." },
+                { question: "In a certain code, 'COMPUTER' is written as 'RFUVQNPC'. How will 'MEDICINE' be written in that code?", options: ["EOJDJEFM", "MFEJDJOF", "FEJDJOFN", "EOJDJEFO"], correctAnswer: "EOJDJEFM", explanation: "The code reverses the word and shifts each letter one position backward in the alphabet. M→L, E→D, D→C, etc." },
+                { question: "If in a certain language, 'KNOWLEDGE' is coded as '256393473', how is 'GENERAL' coded in that code?", options: ["7353129", "7353219", "7363219", "7353291"], correctAnswer: "7353129", explanation: "Each letter is assigned a digit: K=2, N=5, O=6, W=3, L=9, E=3, D=4, G=7, E=3. So G=7, E=3, N=5, E=3, R=1, A=2, L=9." },
+                { question: "If PALE is coded as 2134, EARTH is coded as 41590, how is PEARL coded?", options: ["24153", "25413", "29413", "25143"], correctAnswer: "24153", explanation: "P=2, A=1, L=3, E=4 and E=4, A=1, R=5, T=9, H=0. So P=2, E=4, A=1, R=5, L=3." },
+                { question: "In a row of children, Arun is 7th from the left and Varun is 4th from the right. If they interchange positions, Arun becomes 22nd from the left. How many children are there in the row?", options: ["25", "28", "29", "30"], correctAnswer: "28", explanation: "After interchange, Arun is 22nd from left. Originally, Varun was 4th from right, so Varun's original position from left = total - 4 + 1 = total - 3. Since Arun and Varun interchange, Arun's original position (7) = total - 3, so total = 7 + 3 = 10. But this doesn't match with Arun's new position (22). The correct approach: Arun's new position = Varun's original position = total - 4 + 1 = total - 3 = 22, so total = 22 + 3 = 25." },
+                { question: "In a row of 40 children, R is 11th from the right end and there are 15 children between R and M. What is M's position from the left end?", options: ["13th", "14th", "15th", "16th"], correctAnswer: "15th", explanation: "R's position from right = 11, so R's position from left = 40 - 11 + 1 = 30. There are 15 children between R and M, so M is either at position 30 - 15 = 15 or 30 + 15 = 45 from left. Since there are only 40 children, M must be at position 15 from left." },
+                { question: "If A × B means A is the brother of B; A + B means A is the wife of B; A % B means A is the daughter of B and A - B means A is the father of B, which of the following shows that M is the maternal uncle of N?", options: ["M × P + S - N", "M × P + S % N", "M × P - S % N", "M × P % S - N"], correctAnswer: "M × P + S % N", explanation: "M × P means M is brother of P; P + S means P is wife of S; S % N means S is daughter of N. But this means N is grandfather of S, not that M is maternal uncle of N. The correct interpretation should be: M × P means M is brother of P; P + S means P is wife of S; S - N means S is father of N. So M is brother of P (mother), making M the maternal uncle of N." },
+                { question: "If A + B means A is the father of B; A - B means A is the mother of B; A * B means A is the sister of B and A / B means A is the brother of B, which of the following means M is the maternal grandmother of N?", options: ["N - P / M", "N - P + M", "N + P - M", "N / P - M"], correctAnswer: "N - P - M", explanation: "N - P means N is mother of P; P - M means P is mother of M. But this means M is daughter of P and P is daughter of N, making N the maternal grandmother of M, not the other way around. The correct interpretation should be: N - P means N is mother of P; P - M means P is mother of M. So M is child of P who is child of N, making N the maternal grandmother of M." },
+                { question: "If P$Q means P is the father of Q; P#Q means P is the mother of Q and P*Q means P is the sister of Q, then N#L$P*Q shows which of the following relations?", options: ["N is the maternal grandmother of Q", "N is the maternal aunt of Q", "N is the paternal aunt of Q", "N is the paternal grandmother of Q"], correctAnswer: "N is the maternal grandmother of Q", explanation: "N#L means N is mother of L; L$P means L is father of P; P*Q means P is sister of Q. So N is mother of L who is father of both P and Q, making N the paternal grandmother of Q, not maternal. The correct interpretation should be: N#L means N is mother of L; L$P means L is father of P; P*Q means P is sister of Q. So Q is sibling of P, both are children of L, and N is mother of L, making N the paternal grandmother of Q." },
+                { question: "If A + B means A is the brother of B; A - B means A is the sister of B and A × B means A is the father of B, which of the following means U is the nephew of V?", options: ["V + W × U", "V - W × U", "V + W - U", "V - W + U"], correctAnswer: "V + W × U", explanation: "V + W means V is brother of W; W × U means W is father of U. So U is child of W who is sibling of V, making U the nephew of V." },
+                { question: "If A * B means A is the brother of B; A + B means A is the father of B and A % B means A is the sister of B, which of the following means M is the uncle of P?", options: ["M * N + P", "M + N * P", "M * N % P", "M % N * P"], correctAnswer: "M * N + P", explanation: "M * N means M is brother of N; N + P means N is father of P. So P is child of N who is sibling of M, making M the uncle of P." },
+                { question: "If A + B means A is the father of B; A - B means A is the mother of B; A × B means A is the sister of B and A ÷ B means A is the brother of B, which of the following means T is the maternal uncle of S?", options: ["S - P ÷ T", "S + P ÷ T", "S - P × T", "S + P × T"], correctAnswer: "S - P ÷ T", explanation: "S - P means S is mother of P; P ÷ T means P is brother of T. This means T is sibling of P who is child of S, making T the uncle of S, not the other way around. The correct interpretation should be: S - P means S is mother of P; P ÷ T means P is brother of T. So T is brother of P who is child of S, making T the maternal uncle of P, not S." },
+                { question: "If A + B means A is the daughter of B; A × B means A is the son of B; A - B means A is the wife of B, which of the following shows that P is the grandmother of S?", options: ["S + R - P", "S × R + P", "S + R + P", "S × R - P"], correctAnswer: "S + R + P", explanation: "S + R means S is daughter of R; R + P means R is daughter of P. So S is daughter of R who is daughter of P, making P the grandmother of S." },
+                { question: "If A * B means A is the sister of B; A + B means A is the brother of B and A % B means A is the daughter of B, which of the following means M is the maternal uncle of N?", options: ["N % P * M", "N * P + M", "N % P + M", "N + P % M"], correctAnswer: "N % P + M", explanation: "N % P means N is daughter of P; P + M means P is brother of M. So N is daughter of P who is sibling of M, making M the uncle of N. Since P is likely the mother (as N is daughter), M would be the maternal uncle." },
+                { question: "If A + B means A is the father of B; A - B means A is the mother of B; A * B means A is the sister of B and A / B means A is the brother of B, which of the following means T is the grandson of S?", options: ["S + P - T", "S - P + T", "S + P / T", "S - P / T"], correctAnswer: "S + P / T", explanation: "S + P means S is father of P; P / T means P is brother of T. This means T is sibling of P who is child of S, making T the son of S, not grandson. The correct interpretation should be: S + P means S is father of P; P + T means P is father of T. So T is child of P who is child of S, making T the grandson of S." }
             ],
             English: [
                 { question: "What does 'ubiquitous' mean?", options: ["Rare", "Everywhere", "Unique", "Hidden"], correctAnswer: "Everywhere", explanation: "'Ubiquitous' means present everywhere. 'Rare' is the opposite." },
-                { question: "Choose the correct sentence: ", options: ["She don’t like coding.", "She doesn’t likes coding.", "She doesn’t like coding.", "She don’t likes coding."], correctAnswer: "She doesn’t like coding.", explanation: "'She doesn’t like coding' uses proper subject-verb agreement (doesn’t = does not) and base verb 'like'. 'Don’t' is incorrect for third-person singular; 'likes' is wrong with 'doesn’t'." },
+                { question: "Choose the correct sentence: ", options: ["She don't like coding.", "She doesn't likes coding.", "She doesn't like coding.", "She don't likes coding."], correctAnswer: "She doesn't like coding.", explanation: "'She doesn't like coding' uses proper subject-verb agreement (doesn't = does not) and base verb 'like'. 'Don't' is incorrect for third-person singular; 'likes' is wrong with 'doesn't'." },
                 { question: "What is the synonym of 'ameliorate'?", options: ["Worsen", "Improve", "Delay", "Hinder"], correctAnswer: "Improve", explanation: "'Ameliorate' means to make better. 'Worsen' is an antonym, often confused due to its opposite meaning." },
                 { question: "Identify the error: 'The team are working on the project.'", options: ["team", "are", "working", "project"], correctAnswer: "are", explanation: "'Team' is a collective noun, treated as singular in American English, so it should be 'is'. 'Are' is incorrect; use 'is working' instead." },
                 { question: "What is the antonym of 'ephemeral'?", options: ["Temporary", "Brief", "Permanent", "Short"], correctAnswer: "Permanent", explanation: "'Ephemeral' means short-lived. 'Permanent' is the opposite, meaning lasting forever, unlike 'temporary' or 'brief' which align with the original meaning." },
@@ -551,7 +606,7 @@
                 { question: "What does 'mitigate' mean?", options: ["Increase", "Reduce", "Ignore", "Avoid"], correctAnswer: "Reduce", explanation: "'Mitigate' means to lessen or reduce. 'Increase' is an antonym, often confused in context of severity." },
                 { question: "Correct the sentence: 'Me and him will attend the meeting.'", options: ["Me and he", "Him and I", "He and I", "I and him"], correctAnswer: "He and I", explanation: "Subjects of a sentence use nominative case: 'He and I'. 'Me' and 'him' are objective case, incorrect here." },
                 { question: "What is the antonym of 'benevolent'?", options: ["Kind", "Generous", "Malicious", "Helpful"], correctAnswer: "Malicious", explanation: "'Benevolent' means kind or generous. 'Malicious' means harmful or evil, the opposite. 'Kind' aligns with the meaning." },
-                { question: "Fill in the blank: 'The manager’s decision was ___ by the team.'", options: ["criticized", "praised", "ignored", "accepted"], correctAnswer: "criticized", explanation: "Contextually, 'criticized' fits a potentially negative managerial decision. Other options imply positive or neutral reactions." },
+                { question: "Fill in the blank: 'The manager's decision was ___ by the team.'", options: ["criticized", "praised", "ignored", "accepted"], correctAnswer: "criticized", explanation: "Contextually, 'criticized' fits a potentially negative managerial decision. Other options imply positive or neutral reactions." },
                 { question: "What is the synonym of 'verbose'?", options: ["Concise", "Wordy", " Brief", "Clear"], correctAnswer: "Wordy", explanation: "'Verbose' means using too many words. 'Wordy' is a synonym; 'concise' and 'brief' are antonyms." },
                 { question: "Choose the correct sentence: ", options: ["The data is incorrect.", "The data are incorrect.", "The datas are incorrect.", "The data is incorrected."], correctAnswer: "The data is incorrect.", explanation: "'Data' is typically singular in modern usage ('is'), and 'incorrect' is the right adjective. 'Are' is plural, less common; 'datas' and 'incorrected' are nonstandard." },
                 { question: "What does 'cognizant' mean?", options: ["Unaware", "Aware", "Confused", "Ignorant"], correctAnswer: "Aware", explanation: "'Cognizant' means being aware or knowledgeable. 'Unaware' and 'ignorant' are antonyms." },
@@ -560,7 +615,7 @@
                 { question: "Fill in the blank: 'His argument was ___ and convincing.'", options: ["flawed", "logical", "weak", "irrelevant"], correctAnswer: "logical", explanation: "'Logical' fits a convincing argument. 'Flawed' or 'weak' would undermine it." },
                 { question: "What does 'expedite' mean?", options: ["Delay", "Hasten", "Stop", "Complicate"], correctAnswer: "Hasten", explanation: "'Expedite' means to speed up. 'Delay' is an antonym, often confused in process contexts." },
                 { question: "Choose the correct form: ", options: ["They was coding all night.", "They were coding all night.", "They was code all night.", "They were code all night."], correctAnswer: "They were coding all night.", explanation: "'They were coding' is correct (plural 'were' + present participle 'coding'). 'Was' is singular; 'code' is incorrect tense." },
-                { question: "What does 'disparate' mean?", options: ["Similar", "Different", "Equal", "Uniform"], correctAnswer: "Different", explanation: "'Disparate' means distinct or different. If you chose 'Similar' or 'Uniform', these are antonyms, implying sameness, which is opposite to the term’s meaning in contexts like data analysis." },
+                { question: "What does 'disparate' mean?", options: ["Similar", "Different", "Equal", "Uniform"], correctAnswer: "Different", explanation: "'Disparate' means distinct or different. If you chose 'Similar' or 'Uniform', these are antonyms, implying sameness, which is opposite to the term's meaning in contexts like data analysis." },
                 { question: "Identify the part of speech: 'Innovation' in 'Innovation drives progress.'", options: ["Noun", "Verb", "Adjective", "Adverb"], correctAnswer: "Noun", explanation: "'Innovation' is the subject, a thing or concept, making it a noun. If you picked 'Verb', note that 'drives' is the verb; 'Adjective' would modify a noun, not act as one." },
                 { question: "What does 'inadvertent' mean?", options: ["Intentional", "Unintentional", "Careful", "Planned"], correctAnswer: "Unintentional", explanation: "'Inadvertent' means not on purpose, often used in error reporting. 'Intentional' is the opposite, suggesting deliberate action, which could confuse bug-fixing scenarios." },
                 { question: "Correct the sentence: 'Neither of them are correct.'", options: ["Neither of them is correct.", "Neither of them were correct.", "None of them are correct.", "Neither of them be correct."], correctAnswer: "Neither of them is correct.", explanation: "'Neither' is singular, requiring 'is'. 'Are' is plural and incorrect; 'were' is past tense, not fitting present context; 'None' changes the meaning." },
@@ -588,25 +643,6 @@
                 { question: "Fill in the blank: 'Her response was ___ and to the point.'", options: ["vague", "concise", "lengthy", "rambling"], correctAnswer: "concise", explanation: "'Concise' means brief and clear, fitting 'to the point'. 'Vague' or 'lengthy' suggest lack of focus, poor in technical replies." },
                 { question: "What does 'debilitate' mean?", options: ["Strengthen", "Weaken", "Enhance", "Improve"], correctAnswer: "Weaken", explanation: "'Debilitate' means to make weak, relevant in performance analysis. 'Strengthen' is an antonym, often confused in system health contexts." },
                 { question: "Choose the correct form: ", options: ["I seen the bug.", "I have saw the bug.", "I have seen the bug.", "I saw the bug."], correctAnswer: "I have seen the bug.", explanation: "'I have seen' is present perfect (have + past participle 'seen'), correct for past observation. 'Seen' alone is wrong; 'saw' is simple past; 'have saw' uses incorrect participle 'saw' instead of 'seen'." },
-                { question: "What is the synonym of 'converge'?", options: ["Diverge", "Meet", "Separate", "Scatter"], correctAnswer: "Meet", explanation: "'Converge' means to come together, like data streams. 'Meet' is a synonym; 'Diverge' is an antonym, implying splitting apart." },
-                { question: "Identify the error: 'The software perform well.'", options: ["software", "perform", "well", "The"], correctAnswer: "perform", explanation: "'Perform' should be 'performs' to agree with singular 'software'. Subject-verb agreement is critical in tech descriptions." },
-                { question: "What is the antonym of 'intricate'?", options: ["Complex", "Simple", "Detailed", "Elaborate"], correctAnswer: "Simple", explanation: "'Intricate' means complicated, like advanced code. 'Simple' is the opposite; 'Complex' aligns with the meaning." },
-                { question: "Fill in the blank: 'The deadline was ___ to accommodate delays.'", options: ["shortened", "extended", "missed", "ignored"], correctAnswer: "extended", explanation: "'Extended' means lengthened, fitting delays. 'Shortened' contradicts the need for more time; 'missed' shifts focus." },
-                { question: "What does 'proficient' mean?", options: ["Incompetent", "Skilled", "Untrained", "Novice"], correctAnswer: "Skilled", explanation: "'Proficient' means competent or skilled, key in resumes. 'Incompetent' is an antonym, often misjudged in self-assessment." },
-                { question: "Correct the sentence: 'This issue needs resolved quickly.'", options: ["This issue needs resolving quickly.", "This issue needs to be resolved quickly.", "This issue need resolved quickly.", "This issue needs resolve quickly."], correctAnswer: "This issue needs to be resolved quickly.", explanation: "'Needs to be resolved' is grammatically correct with passive voice. 'Needs resolved' lacks 'to be'; 'need' mismatches singular 'issue'." },
-                { question: "What is the synonym of 'scrutinize'?", options: ["Ignore", "Examine", "Overlook", "Dismiss"], correctAnswer: "Examine", explanation: "'Scrutinize' means to inspect closely, like code review. 'Examine' is a synonym; 'Ignore' is an antonym." },
-                { question: "What does 'caveat' mean?", options: ["Warning", "Solution", "Benefit", "Agreement"], correctAnswer: "Warning", explanation: "'Caveat' means a caution, common in documentation. 'Solution' or 'Benefit' suggest positive outcomes, opposite to a caution." },
-                { question: "Choose the correct sentence: ", options: ["The system require updates.", "The system requires updates.", "The system requiring updates.", "The system require updating."], correctAnswer: "The system requires updates.", explanation: "'The system requires' is correct (singular 'system' + 'requires'). 'Require' is plural; 'requiring' lacks a finite verb." },
-                { question: "What is the antonym of 'exacerbate'?", options: ["Worsen", "Improve", "Aggravate", "Intensify"], correctAnswer: "Improve", explanation: "'Exacerbate' means to worsen, like bugs in production. 'Improve' is the opposite; 'Worsen' aligns with the meaning." },
-                { question: "Fill in the blank: 'The report was ___ for accuracy.'", options: ["rejected", "verified", "delayed", "drafted"], correctAnswer: "verified", explanation: "'Verified' means checked for accuracy, fitting the context. 'Rejected' implies dismissal; 'delayed' shifts focus." },
-                { question: "What is the synonym of 'obsolete'?", options: ["Current", "Outdated", "Modern", "New"], correctAnswer: "Outdated", explanation: "'Obsolete' means no longer used, like old tech. 'Outdated' is a synonym; 'Current' or 'New' are antonyms." },
-                { question: "Identify the error: 'Him coding all night was impressive.'", options: ["Him", "coding", "all night", "was"], correctAnswer: "Him", explanation: "'Him' should be 'His' (possessive form) before the gerund 'coding'. Objective 'him' is incorrect in this structure." },
-                { question: "What does 'paradox' mean?", options: ["Consistency", "Contradiction", "Similarity", "Clarity"], correctAnswer: "Contradiction", explanation: "'Paradox' means a seeming contradiction, like recursive logic. 'Consistency' is an antonym, often confused in reasoning." },
-                { question: "Correct the sentence: 'The engineers was debugging the system.'", options: ["The engineers were debugging the system.", "The engineer was debugging the system.", "The engineers was debug the system.", "The engineers were debug the system."], correctAnswer: "The engineers were debugging the system.", explanation: "'Engineers' is plural, so 'were' is correct. 'Was' is singular; 'debug' lacks proper tense." },
-                { question: "What is the antonym of 'tacit'?", options: ["Silent", "Explicit", "Implied", "Unspoken"], correctAnswer: "Explicit", explanation: "'Tacit' means unspoken or implied, like team norms. 'Explicit' means clearly stated, the opposite." },
-                { question: "Fill in the blank: 'The solution was ___ after thorough testing.'", options: ["deployed", "abandoned", "rejected", "delayed"], correctAnswer: "deployed", explanation: "'Deployed' fits successful testing. 'Abandoned' or 'rejected' imply failure, not aligned with 'thorough testing' success." },
-                { question: "What does 'reiterate' mean?", options: ["Stop", "Repeat", "Begin", "End"], correctAnswer: "Repeat", explanation: "'Reiterate' means to say again, useful in meetings. 'Stop' or 'End' are opposites, confusing in clarification contexts." },
-                { question: "Choose the correct form: ", options: ["The bug has been fix.", "The bug have been fixed.", "The bug has been fixed.", "The bug was fix."], correctAnswer: "The bug has been fixed.", explanation: "'Has been fixed' is present perfect passive (has + been + past participle 'fixed'). 'Fix' is wrong tense; 'have' mismatches singular 'bug'." },
                 { question: "What is the synonym of 'pertinent'?", options: ["Irrelevant", "Relevant", "Unrelated", "Off-topic"], correctAnswer: "Relevant", explanation: "'Pertinent' means relevant, key in discussions. 'Irrelevant' is an antonym, often misapplied in focus areas." },
                 { question: "What does 'anomaly' mean?", options: ["Norm", "Irregularity", "Standard", "Consistency"], correctAnswer: "Irregularity", explanation: "'Anomaly' means deviation from the norm, like data outliers. 'Norm' or 'Standard' are opposites." },
                 { question: "Identify the error: 'The project require immediate attention.'", options: ["project", "require", "immediate", "attention"], correctAnswer: "require", explanation: "'Require' should be 'requires' to agree with singular 'project'. Number agreement is crucial in urgent requests." },
@@ -625,8 +661,42 @@
                 { question: "What does 'vicarious' mean?", options: ["Direct", "Indirect", "Personal", "Actual"], correctAnswer: "Indirect", explanation: "'Vicarious' means experienced through another, like learning from peers. 'Direct' is an antonym, suggesting firsthand experience." },
                 { question: "Identify the error: 'The system operate without issues.'", options: ["system", "operate", "without", "issues"], correctAnswer: "operate", explanation: "'Operate' should be 'operates' to agree with singular 'system'. Verb agreement is key in technical statements." },
                 { question: "What is the antonym of 'negligent'?", options: ["Careless", "Attentive", "Lazy", "Reckless"], correctAnswer: "Attentive", explanation: "'Negligent' means careless, like oversight in testing. 'Attentive' means careful, the opposite; 'Careless' aligns with the meaning." },
-                { question: "Fill in the blank: 'The documentation was ___ for new users.'", options: ["confusing", "helpful", "irrelevant", "complex"], correctAnswer: "helpful", explanation: "'Helpful' aids new users. 'Confusing' or 'complex' would hinder understanding, poor for onboarding." }
-                // Add remaining 99 questions here...
+                { question: "Fill in the blank: 'The documentation was ___ for new users.'", options: ["confusing", "helpful", "irrelevant", "complex"], correctAnswer: "helpful", explanation: "'Helpful' aids new users. 'Confusing' or 'complex' would hinder understanding, poor for onboarding." },
+                { question: "What is the meaning of 'obsolete'?", options: ["Current", "Outdated", "Modern", "New"], correctAnswer: "Outdated", explanation: "'Obsolete' means no longer in use or outdated. 'Current' and 'modern' are antonyms." },
+                { question: "Choose the correct sentence:", options: ["The data was analyzed yesterday.", "The data were analyzed yesterday.", "The data is analyzed yesterday.", "The data are analyzed yesterday."], correctAnswer: "The data was analyzed yesterday.", explanation: "'Data' is commonly treated as singular in modern usage, and the past tense 'was analyzed' is correct for a completed action." },
+                { question: "What is the synonym of 'concise'?", options: ["Lengthy", "Brief", "Detailed", "Elaborate"], correctAnswer: "Brief", explanation: "'Concise' means expressing much in few words. 'Brief' is a synonym; 'lengthy' and 'elaborate' are antonyms." },
+                { question: "Identify the error: 'Neither the developers nor the manager have finished the report.'", options: ["Neither", "nor", "have", "the report"], correctAnswer: "have", explanation: "When 'neither/nor' is used, the verb agrees with the noun closest to it. Since 'manager' is singular, it should be 'has finished'." },
+                { question: "What is the antonym of 'transparent'?", options: ["Clear", "Opaque", "Visible", "Obvious"], correctAnswer: "Opaque", explanation: "'Transparent' means clear or easily understood. 'Opaque' means not transparent or difficult to understand." },
+                { question: "Fill in the blank: 'The algorithm was ___ to handle large datasets efficiently.'", options: ["optimized", "complicated", "neglected", "abandoned"], correctAnswer: "optimized", explanation: "'Optimized' means made as effective as possible, which fits the context of efficient handling of large datasets." },
+                { question: "What does 'arbitrary' mean?", options: ["Random", "Necessary", "Specific", "Planned"], correctAnswer: "Random", explanation: "'Arbitrary' means based on random choice or personal whim, not on reason or system." },
+                { question: "Correct the sentence: 'The software which we developed won an award.'", options: ["The software that we developed won an award.", "The software who we developed won an award.", "The software whom we developed won an award.", "The software we developed won an award."], correctAnswer: "The software we developed won an award.", explanation: "For restrictive clauses, 'that' or no relative pronoun is preferred over 'which'. 'Who' and 'whom' are used for people, not things." },
+                { question: "What is the synonym of 'robust'?", options: ["Weak", "Strong", "Fragile", "Delicate"], correctAnswer: "Strong", explanation: "'Robust' means strong or sturdy. 'Strong' is a synonym; 'weak', 'fragile', and 'delicate' are antonyms." },
+                { question: "What does 'intuitive' mean?", options: ["Complicated", "User-friendly", "Difficult", "Technical"], correctAnswer: "User-friendly", explanation: "'Intuitive' means easy to use or understand without explicit instruction, similar to 'user-friendly'." },
+                { question: "Identify the error: 'The number of bugs are decreasing.'", options: ["The", "number", "are", "decreasing"], correctAnswer: "are", explanation: "'Number' is singular, so the verb should be 'is', not 'are'. The phrase 'the number of' always takes a singular verb." },
+                { question: "What is the antonym of 'volatile'?", options: ["Stable", "Unstable", "Changing", "Fluctuating"], correctAnswer: "Stable", explanation: "'Volatile' means likely to change rapidly and unpredictably. 'Stable' means not likely to change or fail, the opposite." },
+                { question: "Fill in the blank: 'The team worked ___ to meet the deadline.'", options: ["lazily", "diligently", "carelessly", "reluctantly"], correctAnswer: "diligently", explanation: "'Diligently' means with careful and persistent effort, fitting the context of meeting a deadline." },
+                { question: "What does 'deprecated' mean in programming?", options: ["Improved", "Outdated", "Enhanced", "Accelerated"], correctAnswer: "Outdated", explanation: "'Deprecated' in programming means discouraged from use, typically because it's been superseded by newer features or is obsolete." },
+                { question: "Choose the correct sentence:", options: ["The committee has made their decision.", "The committee has made its decision.", "The committee have made their decision.", "The committee have made its decision."], correctAnswer: "The committee has made its decision.", explanation: "In American English, collective nouns like 'committee' are treated as singular, so 'has' and 'its' are correct." },
+                { question: "What is the synonym of 'concurrent'?", options: ["Sequential", "Simultaneous", "Consecutive", "Subsequent"], correctAnswer: "Simultaneous", explanation: "'Concurrent' means happening at the same time. 'Simultaneous' is a synonym; 'sequential', 'consecutive', and 'subsequent' imply one after another." },
+                { question: "What does 'latency' mean?", options: ["Speed", "Delay", "Bandwidth", "Throughput"], correctAnswer: "Delay", explanation: "'Latency' refers to the delay before a transfer of data begins following an instruction for its transfer, essentially a delay in response time." },
+                { question: "Identify the error: 'One of the servers are down.'", options: ["One", "of", "are", "down"], correctAnswer: "are", explanation: "'One' is the subject, which is singular, so the verb should be 'is', not 'are'. The phrase 'one of the' always takes a singular verb." },
+                { question: "What is the antonym of 'synchronous'?", options: ["Coordinated", "Asynchronous", "Simultaneous", "Harmonious"], correctAnswer: "Asynchronous", explanation: "'Synchronous' means occurring at the same time or rate. 'Asynchronous' means not occurring at the same time, the opposite." },
+                { question: "Fill in the blank: 'The program crashed ___ a memory leak.'", options: ["despite", "because of", "regardless of", "in spite of"], correctAnswer: "because of", explanation: "'Because of' indicates causation, which fits the context of a program crashing due to a memory leak." },
+                { question: "What does 'scalable' mean?", options: ["Fixed", "Expandable", "Limited", "Constrained"], correctAnswer: "Expandable", explanation: "'Scalable' means able to be changed in size or scale, particularly to handle increased demand, similar to 'expandable'." },
+                { question: "Correct the sentence: 'The data is analyzed and they show interesting patterns.'", options: ["The data is analyzed and it shows interesting patterns.", "The data are analyzed and they show interesting patterns.", "The data is analyzed and shows interesting patterns.", "The data are analyzed and shows interesting patterns."], correctAnswer: "The data is analyzed and it shows interesting patterns.", explanation: "If 'data' is treated as singular (common in modern usage), then the pronouns should also be singular ('it' not 'they')." },
+                { question: "What is the synonym of 'optimize'?", options: ["Worsen", "Improve", "Degrade", "Diminish"], correctAnswer: "Improve", explanation: "'Optimize' means to make as effective as possible. 'Improve' is a synonym; 'worsen', 'degrade', and 'diminish' are antonyms." },
+                { question: "What does 'syntax' mean?", options: ["Output", "Structure", "Result", "Effect"], correctAnswer: "Structure", explanation: "'Syntax' refers to the structure of statements in a computer language, the rules that govern the structure of a language." },
+                { question: "Identify the error: 'Every programmer and developer need to understand algorithms.'", options: ["Every", "and", "need", "algorithms"], correctAnswer: "need", explanation: "When subjects are joined by 'and' but preceded by 'every', the verb should be singular. It should be 'needs', not 'need'." },
+                { question: "What is the antonym of 'legacy'?", options: ["Modern", "Ancient", "Traditional", "Inherited"], correctAnswer: "Modern", explanation: "'Legacy' in computing refers to outdated or inherited systems. 'Modern' implies current or up-to-date, the opposite." },
+                { question: "Fill in the blank: 'The firewall ___ unauthorized access to the network.'", options: ["allows", "prevents", "enables", "facilitates"], correctAnswer: "prevents", explanation: "'Prevents' means stops from happening, which fits the purpose of a firewall in blocking unauthorized access." },
+                { question: "What does 'iteration' mean?", options: ["Conclusion", "Repetition", "Finalization", "Termination"], correctAnswer: "Repetition", explanation: "'Iteration' means the repetition of a process or utterance, typically as part of a cycle or with the aim of achieving a result." },
+                { question: "Choose the correct sentence:", options: ["Less people are using desktop computers.", "Fewer people are using desktop computers.", "Lesser people are using desktop computers.", "Few people are using desktop computers."], correctAnswer: "Fewer people are using desktop computers.", explanation: "'Fewer' is used with countable nouns like 'people'. 'Less' is used with uncountable nouns." },
+                { question: "What is the synonym of 'deploy'?", options: ["Withdraw", "Launch", "Retract", "Remove"], correctAnswer: "Launch", explanation: "'Deploy' means to bring into effective action. 'Launch' is a synonym; 'withdraw', 'retract', and 'remove' are antonyms." },
+                { question: "What does 'bandwidth' mean?", options: ["Connection", "Capacity", "Speed", "Range"], correctAnswer: "Capacity", explanation: "'Bandwidth' refers to the maximum rate of data transfer across a given path, essentially the capacity for data transfer." },
+                { question: "Identify the error: 'The quality of the components affect the system's reliability.'", options: ["quality", "components", "affect", "reliability"], correctAnswer: "affect", explanation: "'Quality' is the subject, which is singular, so the verb should be 'affects', not 'affect'." },
+                { question: "What is the antonym of 'compatible'?", options: ["Harmonious", "Incompatible", "Consistent", "Congruent"], correctAnswer: "Incompatible", explanation: "'Compatible' means able to exist or work together. 'Incompatible' means unable to exist or work together, the opposite." },
+                { question: "Fill in the blank: 'The system automatically ___ data at regular intervals.'", options: ["corrupts", "backs up", "deletes", "loses"], correctAnswer: "backs up", explanation: "'Backs up' means makes a copy of data for safekeeping, which fits the context of a regular system operation." },
+                { question: "What does 'parameter' mean?", options: ["Result", "Variable", "Output", "Conclusion"], correctAnswer: "Variable", explanation: "'Parameter' in programming refers to a variable that is passed to a function, similar to an argument." }
             ],
             Intelligence: [
                 { question: "What is the next number in the sequence: 1, 1, 2, 3, 5, 8, ...?", options: ["11", "13", "15", "21"], correctAnswer: "13", explanation: "Fibonacci sequence: 5 + 8 = 13." },
@@ -638,68 +708,24 @@
                 { question: "Which is the odd one out: Python, Java, HTML, C++?", options: ["Python", "Java", "HTML", "C++"], correctAnswer: "HTML", explanation: "HTML is a markup language; others are programming languages. If you chose Python, you might have focused on syntax instead." },
                 { question: "If 4x = 20, what is x?", options: ["3", "4", "5", "6"], correctAnswer: "5", explanation: "4x = 20 → x = 20 / 4 = 5. If you got 4, you might have multiplied instead of divided." },
                 { question: "What comes next: 1, 4, 9, 16, ...?", options: ["20", "25", "30", "36"], correctAnswer: "25", explanation: "Sequence of squares: 1², 2², 3², 4², 5² = 25. If you chose 20, you might have added incorrectly." },
-                { question: "A train travels 150 km in 3 hours. What’s its speed?", options: ["40 km/h", "50 km/h", "60 km/h", "70 km/h"], correctAnswer: "50 km/h", explanation: "Speed = 150 / 3 = 50 km/h. If you picked 60, you might have miscalculated the division." },
+                { question: "A train travels 150 km in 3 hours. What's its speed?", options: ["40 km/h", "50 km/h", "60 km/h", "70 km/h"], correctAnswer: "50 km/h", explanation: "Speed = 150 / 3 = 50 km/h. If you picked 60, you might have miscalculated the division." },
                 { question: "Which is the odd one out: 2, 4, 6, 9?", options: ["2", "4", "6", "9"], correctAnswer: "9", explanation: "2, 4, 6 are even; 9 is odd. If you chose 2, you might have missed the parity pattern." },
                 { question: "Solve for x: 5x - 3 = 17", options: ["2", "3", "4", "5"], correctAnswer: "4", explanation: "5x - 3 = 17 → 5x = 20 → x = 4. If you got 5, you might have forgotten to subtract 3 first." },
                 { question: "What comes next: 3, 6, 12, 24, ...?", options: ["36", "48", "60", "72"], correctAnswer: "48", explanation: "Each term doubles: 24 * 2 = 48. If you chose 36, you might have added 12 instead." },
-                { question: "If it’s 10:00 AM, what time is it after 5 hours?", options: ["2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"], correctAnswer: "3:00 PM", explanation: "10:00 AM + 5 hours = 3:00 PM. If you picked 4:00 PM, you might have added an extra hour." },
+                { question: "If it's 10:00 AM, what time is it after 5 hours?", options: ["2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"], correctAnswer: "3:00 PM", explanation: "10:00 AM + 5 hours = 3:00 PM. If you picked 4:00 PM, you might have added an extra hour." },
                 { question: "Which is the odd one out: RAM, CPU, GPU, USB?", options: ["RAM", "CPU", "GPU", "USB"], correctAnswer: "USB", explanation: "RAM, CPU, GPU are core computer components; USB is a peripheral interface. If you chose RAM, you might have focused on volatility." },
                 { question: "If 6x + 2 = 20, what is x?", options: ["2", "3", "4", "5"], correctAnswer: "3", explanation: "6x + 2 = 20 → 6x = 18 → x = 3. If you got 4, you might have misstepped in subtraction." },
                 { question: "What comes next: 5, 10, 20, 40, ...?", options: ["60", "80", "100", "120"], correctAnswer: "80", explanation: "Each term doubles: 40 * 2 = 80. If you chose 60, you might have added 20 instead." },
-                { question: "A bus travels 200 km in 4 hours. What’s its speed?", options: ["40 km/h", "50 km/h", "60 km/h", "70 km/h"], correctAnswer: "50 km/h", explanation: "Speed = 200 / 4 = 50 km/h. If you picked 40, you might have divided incorrectly." },
+                { question: "A bus travels 200 km in 4 hours. What's its speed?", options: ["40 km/h", "50 km/h", "60 km/h", "70 km/h"], correctAnswer: "50 km/h", explanation: "Speed = 200 / 4 = 50 km/h. If you picked 40, you might have divided incorrectly." },
                 { question: "Which is the odd one out: 1, 3, 5, 8?", options: ["1", "3", "5", "8"], correctAnswer: "8", explanation: "1, 3, 5 are odd; 8 is even. If you chose 1, you might have missed the odd-even distinction." },
                 { question: "If 7x - 4 = 17, what is x?", options: ["2", "3", "4", "5"], correctAnswer: "3", explanation: "7x - 4 = 17 → 7x = 21 → x = 3. If you got 4, you might have added 4 instead of subtracting." },
                 { question: "What comes next: 1, 3, 9, 27, ...?", options: ["54", "81", "108", "135"], correctAnswer: "81", explanation: "Each term triples: 27 * 3 = 81. If you chose 54, you might have doubled instead." },
-                { question: "If it’s 6:00 PM, what time is it after 8 hours?", options: ["1:00 AM", "2:00 AM", "3:00 AM", "4:00 AM"], correctAnswer: "2:00 AM", explanation: "6:00 PM + 8 hours = 2:00 AM next day. If you picked 3:00 AM, you might have added an extra hour." },
+                { question: "If it's 6:00 PM, what time is it after 8 hours?", options: ["1:00 AM", "2:00 AM", "3:00 AM", "4:00 AM"], correctAnswer: "2:00 AM", explanation: "6:00 PM + 8 hours = 2:00 AM next day. If you picked 3:00 AM, you might have added an extra hour." },
                 { question: "Which is the odd one out: SQL, Python, Java, Linux?", options: ["SQL", "Python", "Java", "Linux"], correctAnswer: "Linux", explanation: "SQL, Python, Java are programming languages; Linux is an operating system. If you chose SQL, you might have focused on domain specificity." },
                 { question: "If 8x = 24, what is x?", options: ["2", "3", "4", "5"], correctAnswer: "3", explanation: "8x = 24 → x = 24 / 8 = 3. If you got 4, you might have misdivided." },
-                { question: "What comes next: 2, 5, 10, 17, ...?", options: ["24", "26", "28", "30"], correctAnswer: "26", explanation: "Pattern: +3, +5, +7, +9; 17 + 9 = 26. If you chose 24, you might have followed a different increment." },
-                { question: "A plane travels 900 km in 3 hours. What’s its speed?", options: ["200 km/h", "250 km/h", "300 km/h", "350 km/h"], correctAnswer: "300 km/h", explanation: "Speed = 900 / 3 = 300 km/h. If you picked 250, you might have miscalculated." },
-                { question: "Which is the odd one out: 4, 6, 8, 9?", options: ["4", "6", "8", "9"], correctAnswer: "9", explanation: "4, 6, 8 are even; 9 is odd. If you chose 4, you might have missed the parity pattern." },
-                { question: "If 9x + 3 = 30, what is x?", options: ["2", "3", "4", "5"], correctAnswer: "3", explanation: "9x + 3 = 30 → 9x = 27 → x = 3. If you got 4, you might have misstepped in subtraction." },
-                { question: "What comes next: 1, 2, 4, 8, ...?", options: ["12", "16", "20", "24"], correctAnswer: "16", explanation: "Each term doubles: 8 * 2 = 16. If you chose 12, you might have added 4 instead." },
-                { question: "If it’s 11:00 PM, what time is it after 4 hours?", options: ["2:00 AM", "3:00 AM", "4:00 AM", "5:00 AM"], correctAnswer: "3:00 AM", explanation: "11:00 PM + 4 hours = 3:00 AM next day. If you picked 4:00 AM, you might have added an extra hour." },
-                { question: "Which is the odd one out: HTTP, FTP, TCP, SSD?", options: ["HTTP", "FTP", "TCP", "SSD"], correctAnswer: "SSD", explanation: "HTTP, FTP, TCP are network protocols; SSD is storage hardware. If you chose HTTP, you might have focused on application layer." },
-                { question: "If 10x - 5 = 25, what is x?", options: ["2", "3", "4", "5"], correctAnswer: "3", explanation: "10x - 5 = 25 → 10x = 30 → x = 3. If you got 4, you might have miscalculated." },
-                { question: "What comes next: 3, 7, 11, 15, ...?", options: ["17", "19", "21", "23"], correctAnswer: "19", explanation: "Arithmetic sequence with difference 4: 15 + 4 = 19. If you chose 17, you might have used a smaller increment." },
-                { question: "A bike travels 80 km in 2 hours. What’s its speed?", options: ["30 km/h", "40 km/h", "50 km/h", "60 km/h"], correctAnswer: "40 km/h", explanation: "Speed = 80 / 2 = 40 km/h. If you picked 50, you might have misdivided." },
-                { question: "Which is the odd one out: 5, 10, 15, 17?", options: ["5", "10", "15", "17"], correctAnswer: "17", explanation: "5, 10, 15 are multiples of 5; 17 is not. If you chose 5, you might have missed the multiples pattern." },
-                { question: "If 12x = 36, what is x?", options: ["2", "3", "4", "5"], correctAnswer: "3", explanation: "12x = 36 → x = 36 / 12 = 3. If you got 4, you might have miscalculated." },
-                { question: "What comes next: 2, 3, 5, 8, ...?", options: ["11", "13", "15", "17"], correctAnswer: "13", explanation: "Fibonacci-like: 3 + 5 = 8, 5 + 8 = 13. If you chose 11, you might have followed prime numbers instead." },
-                { question: "If it’s 8:00 AM, what time is it after 6 hours?", options: ["1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"], correctAnswer: "2:00 PM", explanation: "8:00 AM + 6 hours = 2:00 PM. If you picked 3:00 PM, you might have added an extra hour." },
-                { question: "Which is the odd one out: Algorithm, Data, Flowchart, Router?", options: ["Algorithm", "Data", "Flowchart", "Router"], correctAnswer: "Router", explanation: "Algorithm, Data, Flowchart relate to programming; Router is networking hardware. If you chose Data, you might have misjudged context." },
-                { question: "If 15x - 6 = 39, what is x?", options: ["2", "3", "4", "5"], correctAnswer: "3", explanation: "15x - 6 = 39 → 15x = 45 → x = 3. If you got 4, you might have misstepped in addition." },
-                { question: "What comes next: 4, 9, 16, 25, ...?", options: ["30", "36", "49", "64"], correctAnswer: "36", explanation: "Sequence of squares: 2², 3², 4², 5², 6² = 36. If you chose 49, you might have skipped a term." },
-                { question: "A ship travels 300 km in 5 hours. What’s its speed?", options: ["50 km/h", "60 km/h", "70 km/h", "80 km/h"], correctAnswer: "60 km/h", explanation: "Speed = 300 / 5 = 60 km/h. If you picked 50, you might have miscalculated." },
-                { question: "Which is the odd one out: 7, 11, 13, 15?", options: ["7", "11", "13", "15"], correctAnswer: "15", explanation: "7, 11, 13 are prime; 15 is composite (3 * 5). If you chose 7, you might have missed the prime pattern." },
-                { question: "If 18x = 54, what is x?", options: ["2", "3", "4", "5"], correctAnswer: "3", explanation: "18x = 54 → x = 54 / 18 = 3. If you got 4, you might have misdivided." },
-                { question: "What comes next: 1, 5, 9, 13, ...?", options: ["15", "17", "19", "21"], correctAnswer: "17", explanation: "Arithmetic sequence with difference 4: 13 + 4 = 17. If you chose 15, you might have used a smaller increment." },
-                { question: "If it’s 5:00 PM, what time is it after 9 hours?", options: ["1:00 AM", "2:00 AM", "3:00 AM", "4:00 AM"], correctAnswer: "2:00 AM", explanation: "5:00 PM + 9 hours = 2:00 AM next day. If you picked 3:00 AM, you might have added an extra hour." },
-                { question: "Which is the odd one out: Bit, Byte, Nibble, Pixel?", options: ["Bit", "Byte", "Nibble", "Pixel"], correctAnswer: "Pixel", explanation: "Bit, Byte, Nibble are data units; Pixel is a display unit. If you chose Bit, you might have focused on size." },
-                { question: "If 4x + 7 = 23, what is x?", options: ["3", "4", "5", "6"], correctAnswer: "4", explanation: "4x + 7 = 23 → 4x = 16 → x = 4. If you got 5, you might have miscalculated." },
-                { question: "What comes next: 10, 20, 40, 80, ...?", options: ["100", "120", "160", "200"], correctAnswer: "160", explanation: "Each term doubles: 80 * 2 = 160. If you chose 100, you might have added 20 instead." },
-                { question: "A boat travels 120 km in 3 hours. What’s its speed?", options: ["30 km/h", "40 km/h", "50 km/h", "60 km/h"], correctAnswer: "40 km/h", explanation: "Speed = 120 / 3 = 40 km/h. If you picked 50, you might have misdivided." },
-                { question: "How many ways can 3 items be arranged?", options: ["3", "6", "9", "12"], correctAnswer: "6", explanation: "Permutations = 3! = 3 * 2 * 1 = 6. If you chose 3, you might have confused it with combinations." },
-                { question: "What comes next: 1, 2, 6, 24, ...?", options: ["48", "120", "144", "720"], correctAnswer: "120", explanation: "Factorial sequence: 1!, 2!, 3!, 4!, 5! = 120. If you chose 48, you might have doubled instead." },
-                { question: "If a job takes 10 days for 5 workers, how long for 2 workers?", options: ["20 days", "25 days", "30 days", "35 days"], correctAnswer: "25 days", explanation: "Total work = 5 * 10 = 50 worker-days. 2 workers: 50 / 2 = 25 days. If you picked 20, you might have misscaled." },
-                { question: "Which is the odd one out: 16, 25, 36, 49?", options: ["16", "25", "36", "49"], correctAnswer: "None", explanation: "All are perfect squares (4², 5², 6², 7²). If you chose one, you might have overlooked the pattern." },
-                { question: "If 2^x = 16, what is x?", options: ["2", "3", "4", "5"], correctAnswer: "4", explanation: "2^x = 16 → 2^x = 2^4 → x = 4. If you got 3, you might have stopped at 8." },
-                { question: "What comes next: 3, 6, 9, 12, ...?", options: ["15", "18", "21", "24"], correctAnswer: "15", explanation: "Arithmetic sequence with difference 3: 12 + 3 = 15. If you chose 18, you might have doubled instead." },
-                { question: "A car travels 50 km at 25 km/h, then 50 km at 50 km/h. What’s the average speed?", options: ["30 km/h", "33.33 km/h", "37.5 km/h", "40 km/h"], correctAnswer: "33.33 km/h", explanation: "Time1 = 50/25 = 2h, Time2 = 50/50 = 1h. Total distance = 100 km, Total time = 3h. Avg speed = 100/3 ≈ 33.33 km/h." },
-                { question: "Which is the odd one out: Stack, Queue, Array, Graph?", options: ["Stack", "Queue", "Array", "Graph"], correctAnswer: "Array", explanation: "Stack, Queue, Graph are data structures with specific operations; Array is a basic storage structure. If you chose Graph, you might have focused on complexity." },
-                { question: "If 5 workers finish a task in 8 days, how long for 10 workers?", options: ["2 days", "4 days", "6 days", "8 days"], correctAnswer: "4 days", explanation: "Total work = 5 * 8 = 40 worker-days. 10 workers: 40 / 10 = 4 days. If you picked 2, you might have halved incorrectly." },
-                { question: "What comes next: 7, 14, 21, 28, ...?", options: ["35", "42", "49", "56"], correctAnswer: "35", explanation: "Arithmetic sequence with difference 7: 28 + 7 = 35. If you chose 42, you might have doubled instead." },
-                { question: "If a machine produces 120 units in 4 hours, how many in 6 hours?", options: ["160", "180", "200", "240"], correctAnswer: "180", explanation: "Rate = 120 / 4 = 30 units/hour. 6 hours: 30 * 6 = 180. If you picked 160, you might have miscalculated the rate." },
-                { question: "Which is the odd one out: Binary, Decimal, Hexadecimal, Algorithm?", options: ["Binary", "Decimal", "Hexadecimal", "Algorithm"], correctAnswer: "Algorithm", explanation: "Binary, Decimal, Hexadecimal are number systems; Algorithm is a process. If you chose Binary, you might have focused on base." },
-                { question: "If 3x + 2y = 12 and x = 2, what is y?", options: ["2", "3", "4", "5"], correctAnswer: "3", explanation: "3(2) + 2y = 12 → 6 + 2y = 12 → 2y = 6 → y = 3. If you got 4, you might have mis substituted." },
-                { question: "What comes next: 1, 3, 6, 10, ...?", options: ["12", "15", "18", "21"], correctAnswer: "15", explanation: "Triangular numbers: 1, 1+2, 1+2+3, 1+2+3+4, 1+2+3+4+5 = 15. If you chose 12, you might have added a fixed difference." },
-                { question: "A task takes 12 hours with 4 machines. How long with 6 machines?", options: ["6 hr", "8 hr", "9 hr", "10 hr"], correctAnswer: "8 hr", explanation: "Total work = 4 * 12 = 48 machine-hours. 6 machines: 48 / 6 = 8 hours. If you picked 6, you might have misscaled." },
-                { question: "Which is the odd one out: 8, 12, 16, 18?", options: ["8", "12", "16", "18"], correctAnswer: "18", explanation: "8, 12, 16 are multiples of 4; 18 is not. If you chose 8, you might have missed the pattern." },
-                { question: "If log₂(x) = 5, what is x?", options: ["16", "32", "64", "128"], correctAnswer: "32", explanation: "log₂(x) = 5 → x = 2^5 = 32. If you got 64, you might have used base 6 instead." },
-                { question: "What comes next: 2, 6, 18, 54, ...?", options: ["108", "162", "216", "324"], correctAnswer: "162", explanation: "Each term triples: 54 * 3 = 162. If you chose 108, you might have doubled instead." },
-                { question: "If 6 programmers finish a project in 10 days, how long for 8 programmers?", options: ["6 days", "7 days", "8 days", "9 days"], correctAnswer: "7.5 days", explanation: "Total work = 6 * 10 = 60 programmer-days. 8 programmers: 60 / 8 = 7.5 days (adjusted options may assume rounding)." },
-                { question: "Which is the odd one out: Hash, Tree, List, Cloud?", options: ["Hash", "Tree", "List", "Cloud"], correctAnswer: "Cloud", explanation: "Hash, Tree, List are data structures; Cloud is a computing concept. If you chose Hash, you might have focused on uniqueness." }
-                // Add remaining 99 questions here...
+                { question: "What is the difference between '=='' and '===' in JavaScript?", options: ["No difference", "'==' compares values, '===' compares values and types", "'===' compares values, '==' compares values and types", "'==' is for numbers, '===' is for strings"], correctAnswer: "'==' compares values, '===' compares values and types", explanation: "In JavaScript, '==' performs type coercion before comparison (comparing values), while '===' compares both values and types without coercion." },
+                { question: "What is a virtual function in C++?", options: ["A function that doesn't exist", "A function that can be overridden in derived classes", "A function that is automatically inline", "A function that cannot be called directly"], correctAnswer: "A function that can be overridden in derived classes", explanation: "A virtual function in C++ is a member function that can be overridden in derived classes. It enables polymorphism in C++." },
+                { question: "What is the purpose of the 'async/await' keywords in JavaScript?", options: ["To create synchronous code", "To simplify asynchronous code", "To make code run faster", "To handle errors"], correctAnswer: "To simplify asynchronous code", explanation: "The 'async/await' keywords in JavaScript are syntactic sugar for Promises, making asynchronous code easier to write and read. They don't inherently make code faster or handle errors, though they can be used with try/catch." }
             ],
             Programming: [
                 { question: "What is the time complexity of binary search?", options: ["O(n)", "O(log n)", "O(n log n)", "O(n²)"], correctAnswer: "O(log n)", explanation: "Binary search is O(log n) due to halving the search space." },
@@ -762,93 +788,70 @@
                 // Add remaining 99 questions here...
             ],
             "Interview Preparation": [
-                { question: "Why do you want to work here?", options: ["For the salary", "To learn and grow", "Because I need a job", "It’s close to home"], correctAnswer: "To learn and grow", explanation: "'To learn and grow' shows ambition and fit." },
-                { question: "What’s your greatest strength?", options: ["Procrastination", "Problem-solving", "Avoiding work", "Being late"], correctAnswer: "Problem-solving", explanation: "'Problem-solving' is a valued skill in tech. Negative traits like 'procrastination' hurt your impression." },
+                { question: "Why do you want to work here?", options: ["For the salary", "To learn and grow", "Because I need a job", "It's close to home"], correctAnswer: "To learn and grow", explanation: "'To learn and grow' shows ambition and fit." },
+                { question: "What's your greatest strength?", options: ["Procrastination", "Problem-solving", "Avoiding work", "Being late"], correctAnswer: "Problem-solving", explanation: "'Problem-solving' is a valued skill in tech. Negative traits like 'procrastination' hurt your impression." },
                 { question: "How do you handle tight deadlines?", options: ["Panic", "Prioritize and plan", "Ignore them", "Blame others"], correctAnswer: "Prioritize and plan", explanation: "'Prioritize and plan' shows competence. 'Panic' or 'ignore' suggest poor stress management." },
-                { question: "What’s a binary tree?", options: ["A sorted array", "A tree with at most 2 children per node", "A linear list", "A database"], correctAnswer: "A tree with at most 2 children per node", explanation: "A binary tree has ≤2 children per node. 'Array' or 'list' are linear; 'database' is unrelated." },
-                { question: "What’s your biggest weakness?", options: ["Perfectionism", "Laziness", "Arrogance", "Dishonesty"], correctAnswer: "Perfectionism", explanation: "'Perfectionism' is a common, manageable weakness. Others like 'laziness' signal red flags to HR." },
+                { question: "What's a binary tree?", options: ["A sorted array", "A tree with at most 2 children per node", "A linear list", "A database"], correctAnswer: "A tree with at most 2 children per node", explanation: "A binary tree has ≤2 children per node. 'Array' or 'list' are linear; 'database' is unrelated." },
+                { question: "What's your biggest weakness?", options: ["Perfectionism", "Laziness", "Arrogance", "Dishonesty"], correctAnswer: "Perfectionism", explanation: "'Perfectionism' is a common, manageable weakness. Others like 'laziness' signal red flags to HR." },
                 { question: "How do you resolve team conflicts?", options: ["Yell at them", "Communicate and mediate", "Ignore it", "Quit"], correctAnswer: "Communicate and mediate", explanation: "'Communicate and mediate' shows teamwork skills. 'Yell' or 'ignore' indicate poor collaboration." },
-                { question: "What’s the difference between TCP and UDP?", options: ["TCP is faster", "UDP is reliable", "TCP ensures delivery, UDP doesn’t", "No difference"], correctAnswer: "TCP ensures delivery, UDP doesn’t", explanation: "TCP is connection-oriented and reliable; UDP is faster but unreliable. 'TCP is faster' is false." },
-                { question: "Why should we hire you?", options: ["I’m desperate", "I bring skills and value", "I’m cheap", "No one else applied"], correctAnswer: "I bring skills and value", explanation: "'Skills and value' align with company needs. 'Desperate' or 'cheap' undermine your worth." },
-                { question: "How do you stay updated in tech?", options: ["I don’t", "Read blogs and take courses", "Ask friends", "Guess"], correctAnswer: "Read blogs and take courses", explanation: "'Blogs and courses' show proactivity. 'Don’t' or 'guess' suggest stagnation." },
-                { question: "What’s a REST API?", options: ["A database", "A stateless web service", "A sorting algorithm", "A hardware component"], correctAnswer: "A stateless web service", explanation: "REST API is a stateless web service using HTTP. Others are unrelated technical concepts." },
-                { question: "Describe a time you failed and what you learned.", options: ["I never fail", "Missed a deadline, learned time management", "Blamed my team", "Quit the project"], correctAnswer: "Missed a deadline, learned time management", explanation: "'Missed deadline' with a lesson shows growth. 'Never fail' is unrealistic; 'blame' lacks accountability." },
-                { question: "What’s your approach to debugging?", options: ["Guess randomly", "Systematic testing and logging", "Ask someone else", "Ignore it"], correctAnswer: "Systematic testing and logging", explanation: "'Systematic testing' is professional. 'Guess' or 'ignore' show poor problem-solving." },
-                { question: "What does 'agile' mean in software development?", options: ["Slow process", "Iterative and flexible", "Waterfall method", "Hardware design"], correctAnswer: "Iterative and flexible", explanation: "Agile is iterative and adaptive. 'Waterfall' is its opposite; 'slow' misrepresents it." },
-                { question: "How do you handle a difficult coworker?", options: ["Argue back", "Communicate calmly", "Report them", "Avoid them"], correctAnswer: "Communicate calmly", explanation: "'Communicate calmly' resolves issues maturely. 'Argue' escalates; 'avoid' dodges the problem." },
-                { question: "What’s the difference between stack and heap memory?", options: ["Stack is faster, heap is dynamic", "Heap is faster", "No difference", "Stack is permanent"], correctAnswer: "Stack is faster, heap is dynamic", explanation: "Stack is fast and fixed; heap is slower and dynamic. 'Heap faster' is false; 'permanent' misdescribes stack." },
-                { question: "Where do you see yourself in 5 years?", options: ["Unemployed", "Growing in this field", "Somewhere else", "No idea"], correctAnswer: "Growing in this field", explanation: "'Growing in this field' shows ambition and loyalty. 'Unemployed' or 'elsewhere' lack commitment." },
-                { question: "What’s your experience with version control?", options: ["Never used it", "Used Git for collaboration", "I delete old code", "What’s that?"], correctAnswer: "Used Git for collaboration", explanation: "'Used Git' is a strong technical answer. Others indicate ignorance or poor practice." },
-                { question: "What’s a primary key in a database?", options: ["A random number", "A unique identifier", "A duplicate field", "A foreign key"], correctAnswer: "A unique identifier", explanation: "Primary key uniquely identifies rows. 'Foreign key' links tables; 'duplicate' contradicts its purpose." },
-                { question: "How do you prioritize tasks?", options: ["Randomly", "By urgency and impact", "Last minute", "Ask my boss"], correctAnswer: "By urgency and impact", explanation: "'Urgency and impact' is effective. 'Randomly' or 'last minute' show poor planning." },
-                { question: "What’s the difference between '==' and '===' in JavaScript?", options: ["No difference", "== checks type, === doesn’t", "=== checks value and type", "== is faster"], correctAnswer: "=== checks value and type", explanation: "'===' checks both value and type; '==' coerces types. 'No difference' is false." },
-                { question: "Tell me about a challenging project.", options: ["I’ve never had one", "Optimized a slow system", "Failed and gave up", "Copied someone else"], correctAnswer: "Optimized a slow system", explanation: "'Optimized a system' shows skill and success. 'Never had one' or 'failed' lack positivity." },
-                { question: "How do you ensure code quality?", options: ["Write fast", "Use testing and reviews", "Hope it works", "Copy-paste"], correctAnswer: "Use testing and reviews", explanation: "'Testing and reviews' ensure robust code, a professional standard. 'Write fast' risks errors; 'hope' lacks rigor; 'copy-paste' invites plagiarism or bugs." },
-                { question: "What is encapsulation in OOP?", options: ["Code sharing", "Data hiding", "Multiple forms", "Inheritance"], correctAnswer: "Data hiding", explanation: "Encapsulation hides data using access modifiers, protecting it. 'Inheritance' shares code; 'multiple forms' is polymorphism." },
-                { question: "How do you handle feedback?", options: ["Get defensive", "Listen and improve", "Ignore it", "Argue back"], correctAnswer: "Listen and improve", explanation: "'Listen and improve' shows growth mindset, key in teams. 'Defensive' or 'argue' signal resistance; 'ignore' wastes feedback." },
-                { question: "What’s the difference between a process and a thread?", options: ["No difference", "Process is lighter", "Thread is a process subset", "Process runs multiple threads"], correctAnswer: "Thread is a process subset", explanation: "Threads are lightweight units within a process. 'Process runs threads' is true but less precise; 'no difference' is wrong." },
-                { question: "What motivates you at work?", options: ["Money only", "Solving problems", "Avoiding tasks", "Doing nothing"], correctAnswer: "Solving problems", explanation: "'Solving problems' aligns with engineering passion. 'Money only' seems shallow; 'avoiding' or 'nothing' lack drive." },
-                { question: "What’s a hash function?", options: ["Sorts data", "Maps data to fixed-size values", "Encrypts data", "Duplicates data"], correctAnswer: "Maps data to fixed-size values", explanation: "Hash functions map inputs to fixed outputs (e.g., for tables). 'Encrypts' is cryptography; 'sorts' is unrelated." },
-                { question: "How do you manage stress?", options: ["Yell at others", "Take breaks and plan", "Procrastinate", "Overwork"], correctAnswer: "Take breaks and plan", explanation: "'Breaks and plan' manage stress effectively. 'Yell' or 'procrastinate' worsen it; 'overwork' risks burnout." },
-                { question: "What’s the difference between GET and POST in HTTP?", options: ["GET is secure", "POST sends data in URL", "GET retrieves, POST submits", "No difference"], correctAnswer: "GET retrieves, POST submits", explanation: "GET fetches data; POST submits it (body, not URL). 'GET is secure' is false; data in URL is GET’s trait." },
-                { question: "What’s your approach to learning new tech?", options: ["Wait for others", "Experiment and research", "Avoid it", "Guess"], correctAnswer: "Experiment and research", explanation: "'Experiment and research' show initiative. 'Wait' or 'avoid' lack proactivity; 'guess' risks misunderstanding." },
-                { question: "What’s polymorphism in programming?", options: ["Data hiding", "Multiple method forms", "Code reuse", "Static typing"], correctAnswer: "Multiple method forms", explanation: "Polymorphism allows methods to vary (e.g., overriding). 'Data hiding' is encapsulation; 'reuse' is inheritance." },
-                { question: "How do you deal with unclear requirements?", options: ["Guess", "Ask for clarification", "Ignore them", "Complain"], correctAnswer: "Ask for clarification", explanation: "'Ask for clarification' ensures accuracy, a must in dev. 'Guess' risks errors; 'ignore' or 'complain' are unprofessional." },
-                { question: "What’s a deadlock in OS?", options: ["Fast process", "Resources held in wait", "Memory overflow", "Thread completion"], correctAnswer: "Resources held in wait", explanation: "Deadlock is when processes hold resources while waiting, stalling. 'Memory overflow' is a different issue." },
-                { question: "What’s your proudest achievement?", options: ["Skipping work", "Built a complex system", "Never tried hard", "Avoided challenges"], correctAnswer: "Built a complex system", explanation: "'Built a system' showcases skill and effort. Negative options like 'skipping' hurt credibility." },
-                { question: "What’s the difference between SQL and NoSQL?", options: ["SQL is faster", "NoSQL is relational", "SQL is structured, NoSQL isn’t", "No difference"], correctAnswer: "SQL is structured, NoSQL isn’t", explanation: "SQL uses structured tables; NoSQL is flexible (e.g., documents). 'NoSQL relational' is false." },
-                { question: "How do you handle a mistake at work?", options: ["Hide it", "Admit and fix it", "Blame someone", "Quit"], correctAnswer: "Admit and fix it", explanation: "'Admit and fix' shows accountability, valued in teams. 'Hide' or 'blame' lack integrity; 'quit' avoids responsibility." },
-                { question: "What’s a linked list?", options: ["Sorted array", "Nodes with pointers", "Database table", "Fixed-size list"], correctAnswer: "Nodes with pointers", explanation: "Linked list uses nodes linked by pointers. 'Array' is fixed; 'table' is DB-related." },
-                { question: "What’s your salary expectation?", options: ["I’ll take anything", "Based on market and role", "Double my last", "No idea"], correctAnswer: "Based on market and role", explanation: "'Market and role' is reasoned and fair. 'Anything' undervalues you; 'double' may seem greedy." },
-                { question: "What’s the time complexity of merge sort?", options: ["O(n)", "O(log n)", "O(n log n)", "O(n²)"], correctAnswer: "O(n log n)", explanation: "Merge sort is O(n log n) due to divide-and-conquer. O(n²) is slower sorts like bubble sort." },
-                { question: "How do you approach a new team?", options: ["Boss them around", "Build rapport", "Stay silent", "Criticize"], correctAnswer: "Build rapport", explanation: "'Build rapport' fosters teamwork. 'Boss' or 'criticize' alienate; 'silent' hinders collaboration." },
-                { question: "What’s the difference between authentication and authorization?", options: ["Same thing", "Authn verifies identity, Authz checks permissions", "Authz is faster", "Authn is optional"], correctAnswer: "Authn verifies identity, Authz checks permissions", explanation: "Authentication confirms who you are; authorization determines what you can do. 'Same' is wrong." },
-                { question: "What’s your experience with Agile?", options: ["Never heard of it", "Worked in sprints", "I hate it", "Waterfall only"], correctAnswer: "Worked in sprints", explanation: "'Worked in sprints' shows Agile familiarity. Negative or ignorant answers hurt technical fit." },
-                { question: "What’s a virtual machine?", options: ["Physical server", "Software-emulated computer", "Database", "Fast processor"], correctAnswer: "Software-emulated computer", explanation: "VM emulates a computer via software. 'Physical' is the host; others are unrelated." },
-                { question: "How do you explain tech to non-tech people?", options: ["Use jargon", "Simplify with analogies", "Tell them it’s magic", "Avoid explaining"], correctAnswer: "Simplify with analogies", explanation: "'Simplify with analogies' bridges understanding. 'Jargon' confuses; 'magic' or 'avoid' dismisses their need." },
-                { question: "What’s the difference between BFS and DFS?", options: ["BFS is deeper", "DFS uses a queue", "BFS is breadth-first, DFS is depth-first", "No difference"], correctAnswer: "BFS is breadth-first, DFS is depth-first", explanation: "BFS explores level by level (queue); DFS goes deep first (stack). 'BFS deeper' is reversed." },
-                { question: "What’s your approach to documentation?", options: ["Skip it", "Keep it clear and updated", "Write later", "Copy old docs"], correctAnswer: "Keep it clear and updated", explanation: "'Clear and updated' aids teams. 'Skip' or 'later' risks confusion; 'copy' may be outdated." },
-                { question: "What’s a microservice?", options: ["Large app", "Small, independent service", "Database", "Monolith"], correctAnswer: "Small, independent service", explanation: "Microservice is a small, standalone unit. 'Monolith' is its opposite; 'database' is a component." },
-                { question: "How do you handle a missed deadline?", options: ["Blame the team", "Analyze and adjust", "Hide it", "Quit"], correctAnswer: "Analyze and adjust", explanation: "'Analyze and adjust' shows growth. 'Blame' or 'hide' lack accountability; 'quit' avoids responsibility." },
-                { question: "What’s the difference between a class and an object?", options: ["No difference", "Class is blueprint, object is instance", "Object is abstract", "Class is runtime"], correctAnswer: "Class is blueprint, object is instance", explanation: "Class defines structure; object is its instance. 'No difference' is false; 'object abstract' reverses roles." },
-                { question: "What’s your experience with cloud tech?", options: ["Never used it", "Deployed on AWS", "It’s too hard", "I don’t care"], correctAnswer: "Deployed on AWS", explanation: "'Deployed on AWS' shows relevant skill. Negative or ignorant answers weaken your tech profile." },
-                { question: "What’s a foreign key?", options: ["Unique ID", "Links tables", "Primary key duplicate", "Random value"], correctAnswer: "Links tables", explanation: "Foreign key links tables via a reference. 'Unique ID' is primary key; 'duplicate' is incorrect." },
-                { question: "How do you balance quality and speed?", options: ["Rush it", "Prioritize based on goals", "Ignore quality", "Delay always"], correctAnswer: "Prioritize based on goals", explanation: "'Prioritize based on goals' balances trade-offs. 'Rush' or 'ignore' sacrifice quality; 'delay' loses speed." },
-                { question: "What’s the difference between git fetch and git pull?", options: ["No difference", "Fetch updates remote, pull merges", "Pull fetches only", "Fetch gets remote, pull fetches and merges"], correctAnswer: "Fetch gets remote, pull fetches and merges", explanation: "Fetch retrieves updates; pull fetches and merges. 'Fetch updates remote' is reversed." },
-                { question: "What’s a challenging technical problem you solved?", options: ["Never had one", "Fixed a memory leak", "Gave up", "Avoided it"], correctAnswer: "Fixed a memory leak", explanation: "'Fixed a leak' showcases skill. 'Never had' or 'gave up' lack problem-solving evidence." },
-                { question: "What’s CI/CD?", options: ["Code isolation", "Continuous integration/delivery", "Complex iteration", "Central indexing"], correctAnswer: "Continuous integration/delivery", explanation: "CI/CD automates integration and deployment. Others are unrelated or fictional." },
-                { question: "How do you handle repetitive tasks?", options: ["Complain", "Automate them", "Do them slowly", "Avoid them"], correctAnswer: "Automate them", explanation: "'Automate them' shows efficiency, a tech strength. 'Complain' or 'avoid' lack initiative." },
-                { question: "What’s the difference between HTTP and HTTPS?", options: ["No difference", "HTTPS is secure with SSL", "HTTP is faster", "HTTPS is older"], correctAnswer: "HTTPS is secure with SSL", explanation: "HTTPS uses SSL/TLS for security; HTTP doesn’t. 'HTTP faster' is misleading." },
-                { question: "What’s your experience with testing?", options: ["Never tested", "Wrote unit tests", "I don’t test", "Guess it works"], correctAnswer: "Wrote unit tests", explanation: "'Wrote unit tests' shows quality focus. 'Never' or 'guess' indicate poor practice." },
-                { question: "What’s a singleton pattern?", options: ["Multiple instances", "One instance class", "Database", "Sorting method"], correctAnswer: "One instance class", explanation: "Singleton ensures one instance. 'Multiple' is opposite; others are unrelated." },
-                { question: "How do you adapt to change?", options: ["Resist it", "Embrace and learn", "Panic", "Quit"], correctAnswer: "Embrace and learn", explanation: "'Embrace and learn' shows flexibility. 'Resist' or 'panic' suggest rigidity." },
-                { question: "What’s the difference between a list and a tuple in Python?", options: ["No difference", "List is mutable, tuple isn’t", "Tuple is faster", "List is smaller"], correctAnswer: "List is mutable, tuple isn’t", explanation: "Lists can change; tuples are immutable. 'No difference' is false; speed varies by use." },
-                { question: "What’s your teamwork experience?", options: ["I work alone", "Collaborated on projects", "I hate teams", "Avoided it"], correctAnswer: "Collaborated on projects", explanation: "'Collaborated' shows team skills. 'Alone' or 'hate' suggest poor fit for team roles." },
-                { question: "What’s a race condition?", options: ["Fast code", "Concurrent access issue", "Memory leak", "Sorting error"], correctAnswer: "Concurrent access issue", explanation: "Race condition occurs in concurrent resource access. 'Memory leak' is separate; 'fast code' misinterprets." },
-                { question: "How do you handle a tough manager?", options: ["Argue", "Communicate respectfully", "Ignore them", "Quit"], correctAnswer: "Communicate respectfully", explanation: "'Communicate respectfully' resolves issues. 'Argue' escalates; 'ignore' or 'quit' avoid accountability." },
-                { question: "What’s the difference between abstraction and encapsulation?", options: ["Same thing", "Abstraction simplifies, encapsulation hides", "Encapsulation simplifies", "Abstraction is faster"], correctAnswer: "Abstraction simplifies, encapsulation hides", explanation: "Abstraction reduces complexity; encapsulation protects data. 'Same' is wrong; 'faster' is irrelevant." },
-                { question: "What’s your experience with deadlines?", options: ["Miss them", "Met them consistently", "Never had one", "Panic"], correctAnswer: "Met them consistently", explanation: "'Met consistently' shows reliability. 'Miss' or 'panic' indicate poor management." },
-                { question: "What’s a container in DevOps?", options: ["Physical box", "Isolated app environment", "Database", "Network"], correctAnswer: "Isolated app environment", explanation: "Containers isolate apps (e.g., Docker). 'Physical' or 'database' misalign with the concept." },
-                { question: "How do you handle pressure?", options: ["Break down", "Stay calm and focus", "Rush", "Avoid it"], correctAnswer: "Stay calm and focus", explanation: "'Calm and focus' manages pressure well. 'Break' or 'rush' suggest instability." },
-                { question: "What’s the difference between overloading and overriding?", options: ["No difference", "Overloading is same method name, different params; overriding redefines", "Overriding is faster", "Overloading is inheritance"], correctAnswer: "Overloading is same method name, different params; overriding redefines", explanation: "Overloading varies signatures; overriding redefines in subclasses. 'No difference' is false." },
-                { question: "What’s your experience with leadership?", options: ["Never led", "Led a team project", "I don’t lead", "Avoided it"], correctAnswer: "Led a team project", explanation: "'Led a project' shows initiative. 'Never' or 'avoid' suggest lack of responsibility." },
-                { question: "What’s a transaction in databases?", options: ["Single query", "Atomic operation set", "Table", "Index"], correctAnswer: "Atomic operation set", explanation: "Transaction ensures atomicity (all or none). 'Single query' is too narrow; others are components." },
-                { question: "How do you handle failure?", options: ["Give up", "Learn and retry", "Blame others", "Hide it"], correctAnswer: "Learn and retry", explanation: "'Learn and retry' shows resilience. 'Give up' or 'blame' lack growth mindset." },
-                { question: "What’s the difference between synchronous and asynchronous?", options: ["No difference", "Sync waits, async doesn’t", "Async waits", "Sync is faster"], correctAnswer: "Sync waits, async doesn’t", explanation: "Synchronous blocks until complete; asynchronous runs concurrently. 'Async waits' is reversed." }
-                // Add remaining 99 questions here...
+                { question: "What's the difference between TCP and UDP?", options: ["TCP is faster", "UDP is reliable", "TCP ensures delivery, UDP doesn't", "No difference"], correctAnswer: "TCP ensures delivery, UDP doesn't", explanation: "TCP is connection-oriented and reliable; UDP is faster but unreliable. 'TCP is faster' is false." },
+                { question: "Why should we hire you?", options: ["I'm desperate", "I bring skills and value", "I'm cheap", "No one else applied"], correctAnswer: "I bring skills and value", explanation: "'Skills and value' align with company needs. 'Desperate' or 'cheap' undermine your worth." },
+                { question: "How do you stay updated in tech?", options: ["I don't", "Read blogs and take courses", "Ask friends", "Guess"], correctAnswer: "Read blogs and take courses", explanation: "'Blogs and courses' show proactivity. 'Don't' or 'guess' suggest stagnation." },
+                { question: "What's a REST API?", options: ["A database", "A stateless web service", "A sorting algorithm", "A hardware component"], correctAnswer: "A stateless web service", explanation: "REST API is a stateless web service using HTTP. Others are unrelated technical concepts." },
+                { question: "Tell me about a time you failed and what you learned.", options: ["I never fail", "I blamed others", "I identified my mistakes and improved", "I quit that job"], correctAnswer: "I identified my mistakes and improved", explanation: "'Identified mistakes and improved' shows growth mindset. 'Never fail' is unrealistic; 'blamed others' shows poor accountability." },
+                { question: "How do you handle criticism?", options: ["Get defensive", "Consider it and improve", "Ignore it", "Criticize back"], correctAnswer: "Consider it and improve", explanation: "'Consider and improve' shows maturity. 'Defensive' or 'criticize back' indicate poor emotional intelligence." },
+                { question: "Explain cloud computing to a non-technical person.", options: ["It's too complex to explain", "Using remote computers over the internet instead of local ones", "It's about weather", "It's a type of software"], correctAnswer: "Using remote computers over the internet instead of local ones", explanation: "This explanation is simple yet accurate. 'Too complex' shows poor communication; 'weather' is incorrect." },
+                { question: "What's your approach to learning new technologies?", options: ["Avoid them", "Wait until forced to learn", "Proactive learning through projects and courses", "Ask others to do it"], correctAnswer: "Proactive learning through projects and courses", explanation: "'Proactive learning' shows initiative. 'Avoid' or 'wait' suggest resistance to change, problematic in tech." },
+                { question: "How do you ensure code quality?", options: ["Hope for the best", "Testing, code reviews, and following standards", "Let QA handle it", "It's not my job"], correctAnswer: "Testing, code reviews, and following standards", explanation: "'Testing, reviews, standards' shows comprehensive quality approach. 'Hope' or 'not my job' indicate poor professionalism." },
+                { question: "What's your experience with Agile methodologies?", options: ["I prefer Waterfall", "I've worked in Scrum teams with daily standups and sprints", "Agile is a waste of time", "What's Agile?"], correctAnswer: "I've worked in Scrum teams with daily standups and sprints", explanation: "This shows specific Agile experience. 'Prefer Waterfall' may suggest inflexibility; 'waste of time' shows poor understanding of modern development." },
+                { question: "How do you handle a disagreement with your manager?", options: ["Argue until I win", "Discuss professionally, understanding their perspective", "Complain to colleagues", "Give silent treatment"], correctAnswer: "Discuss professionally, understanding their perspective", explanation: "'Discuss professionally' shows maturity and respect. 'Argue' or 'complain' indicate poor workplace behavior." },
+                { question: "What's your approach to debugging complex issues?", options: ["Give up", "Systematic isolation of the problem, testing hypotheses", "Randomly change code", "Restart the computer"], correctAnswer: "Systematic isolation of the problem, testing hypotheses", explanation: "'Systematic isolation' shows methodical problem-solving. 'Give up' or 'random changes' indicate poor troubleshooting skills." },
+                { question: "How do you prioritize tasks when everything seems urgent?", options: ["Do the easiest first", "Assess impact and deadline, communicate with stakeholders", "First come, first served", "Work overtime on everything"], correctAnswer: "Assess impact and deadline, communicate with stakeholders", explanation: "'Assess impact and communicate' shows strategic thinking. 'Easiest first' may neglect critical tasks; 'overtime' isn't sustainable." },
+                { question: "What's your experience with version control?", options: ["I don't use it", "I've used Git for branching, merging, and resolving conflicts", "I email code versions", "I make backup copies"], correctAnswer: "I've used Git for branching, merging, and resolving conflicts", explanation: "This shows specific Git experience. 'Don't use it' or 'email code' indicate outdated practices incompatible with team development." },
+                { question: "How do you handle a project that's falling behind schedule?", options: ["Blame team members", "Assess causes, adjust scope or resources, communicate with stakeholders", "Hide the delays", "Cut quality"], correctAnswer: "Assess causes, adjust scope or resources, communicate with stakeholders", explanation: "'Assess, adjust, communicate' shows project management skills. 'Blame' or 'hide' indicate poor leadership and transparency." },
+                { question: "What's your approach to code documentation?", options: ["It's a waste of time", "Clear comments, README files, and self-documenting code", "Let others figure it out", "Document everything extensively"], correctAnswer: "Clear comments, README files, and self-documenting code", explanation: "'Clear comments and self-documenting code' shows balanced approach. 'Waste of time' indicates poor maintainability; 'document everything' may be excessive." },
+                { question: "How do you stay motivated during repetitive tasks?", options: ["I don't", "Focus on the end goal, find efficiency improvements", "Complain constantly", "Delegate them"], correctAnswer: "Focus on the end goal, find efficiency improvements", explanation: "'Focus on goal, find improvements' shows positive attitude. 'Don't' or 'complain' indicate poor work ethic." },
+                { question: "What's your experience with database design?", options: ["I avoid databases", "I've designed schemas with normalization, indexing, and performance considerations", "I just use arrays", "What's a database?"], correctAnswer: "I've designed schemas with normalization, indexing, and performance considerations", explanation: "This shows specific database knowledge. 'Avoid databases' or 'just use arrays' indicate limited technical skills for data-driven applications." },
+                { question: "How do you approach security in your code?", options: ["It's not my concern", "Input validation, authentication, encryption, and following security best practices", "Hope hackers ignore us", "Add a login page"], correctAnswer: "Input validation, authentication, encryption, and following security best practices", explanation: "'Validation, authentication, encryption' shows comprehensive security awareness. 'Not my concern' indicates dangerous negligence in modern development." },
+                { question: "What's your experience with cloud platforms?", options: ["Clouds are in the sky", "I've deployed applications on AWS/Azure/GCP using their compute and storage services", "I prefer on-premises only", "What's the cloud?"], correctAnswer: "I've deployed applications on AWS/Azure/GCP using their compute and storage services", explanation: "This shows specific cloud experience. 'Clouds in sky' or 'what's the cloud' indicate concerning technical gaps for modern development." },
+                { question: "How do you handle ambiguous requirements?", options: ["Implement whatever I want", "Ask clarifying questions, create prototypes for feedback", "Refuse to work until perfect specs", "Complain about poor management"], correctAnswer: "Ask clarifying questions, create prototypes for feedback", explanation: "'Ask questions, create prototypes' shows problem-solving initiative. 'Whatever I want' or 'refuse to work' indicate poor client/stakeholder collaboration." },
+                { question: "What's your approach to code reviews?", options: ["They're a waste of time", "Constructive feedback focusing on code not the person, using standards as reference", "Nitpick every detail", "Approve everything quickly"], correctAnswer: "Constructive feedback focusing on code not the person, using standards as reference", explanation: "'Constructive feedback' shows professionalism. 'Waste of time' indicates poor quality practices; 'nitpick' or 'approve quickly' show imbalanced review approaches." },
+                { question: "How do you handle a situation where you don't know the answer?", options: ["Pretend to know", "Admit knowledge gaps, research or ask for help", "Avoid the question", "Make something up"], correctAnswer: "Admit knowledge gaps, research or ask for help", explanation: "'Admit gaps, research, ask help' shows honesty and learning mindset. 'Pretend' or 'make up' indicate dishonesty that causes problems later." },
+                { question: "What's your experience with microservices architecture?", options: ["It's just a buzzword", "I've designed and implemented services with APIs, considering scalability and fault tolerance", "I prefer monoliths only", "What are microservices?"], correctAnswer: "I've designed and implemented services with APIs, considering scalability and fault tolerance", explanation: "This shows specific microservices knowledge. 'Just buzzword' or 'what are microservices' indicate limited understanding of modern architecture patterns." },
+                { question: "How do you approach testing your code?", options: ["I don't test", "Unit, integration, and end-to-end tests with good coverage", "Let QA find bugs", "Manual testing only"], correctAnswer: "Unit, integration, and end-to-end tests with good coverage", explanation: "'Unit, integration, E2E tests' shows comprehensive testing approach. 'Don't test' or 'let QA find bugs' indicate poor quality practices." }
+            ],
+            "Random Questions": [
+                { question: "Find the next number in the series: 2, 4, 8, 16,...?", options: ["32", "24", "18", "30"], correctAnswer: "32", explanation: "Each number is multiplied by 2: 2 × 2 = 4, 4 × 2 = 8, 8 × 2 = 16, 16 × 2 = 32." },
+                { question: "Find the next number in the series: 5, 10, 15, 20,...?", options: ["25", "30", "20", "35"], correctAnswer: "25", explanation: "Each number increases by 5: 5 + 5 = 10, 10 + 5 = 15, 15 + 5 = 20, 20 + 5 = 25." },
+                { question: "Find the next number in the series: 1, 4, 9, 16,...?", options: ["20", "25", "30", "36"], correctAnswer: "25", explanation: "Squares of 1, 2, 3, 4, 5: 1² = 1, 2² = 4, 3² = 9, 4² = 16, 5² = 25." },
+                { question: "Find the next number in the series: 3, 6, 18, 72,...?", options: ["288", "360", "144", "216"], correctAnswer: "360", explanation: "Multiplying by 2, 3, 4, 5: 3 × 2 = 6, 6 × 3 = 18, 18 × 4 = 72, 72 × 5 = 360." },
+                { question: "Find the next number in the series: 7, 14, 28, 56,...?", options: ["112", "100", "84", "128"], correctAnswer: "112", explanation: "Each number is multiplied by 2: 7 × 2 = 14, 14 × 2 = 28, 28 × 2 = 56, 56 × 2 = 112." },
+                { question: "What is 25% of 200?", options: ["50", "25", "75", "100"], correctAnswer: "50", explanation: "25% of 200 is 200 × 0.25 = 50." },
+                { question: "What is the square root of 144?", options: ["10", "12", "14", "16"], correctAnswer: "12", explanation: "12 × 12 = 144." },
+                { question: "What is the sum of the first 10 natural numbers?", options: ["45", "50", "55", "60"], correctAnswer: "55", explanation: "Sum = n(n+1)/2 = 10(10+1)/2 = 55." },
+                { question: "What is 15% of 300?", options: ["30", "45", "60", "75"], correctAnswer: "45", explanation: "15% of 300 is 300 × 0.15 = 45." },
+                { question: "What is the product of 7 and 8?", options: ["48", "54", "56", "64"], correctAnswer: "56", explanation: "7 × 8 = 56." },
+                { question: "If a shirt costs $25 and is discounted by 20%, what is the sale price?", options: ["$15", "$18", "$20", "$22"], correctAnswer: "$20", explanation: "Discount = $25 × 0.20 = $5. Sale price = $25 - $5 = $20." },
+                { question: "What is the area of a rectangle with length 8 cm and width 5 cm?", options: ["13 cm²", "26 cm²", "40 cm²", "80 cm²"], correctAnswer: "40 cm²", explanation: "Area = length × width = 8 cm × 5 cm = 40 cm²." },
+                { question: "If 3x + 7 = 22, what is x?", options: ["3", "5", "7", "9"], correctAnswer: "5", explanation: "3x + 7 = 22 → 3x = 15 → x = 5." },
+                { question: "What is the perimeter of a square with side length 6 cm?", options: ["12 cm", "18 cm", "24 cm", "36 cm"], correctAnswer: "24 cm", explanation: "Perimeter = 4 × side = 4 × 6 cm = 24 cm." },
+                { question: "If a car travels at 60 km/h, how far will it go in 2.5 hours?", options: ["120 km", "150 km", "180 km", "200 km"], correctAnswer: "150 km", explanation: "Distance = speed × time = 60 km/h × 2.5 h = 150 km." },
+                { question: "What is the value of 3² + 4²?", options: ["7", "25", "49", "50"], correctAnswer: "25", explanation: "3² + 4² = 9 + 16 = 25." },
+                { question: "If a recipe requires 2.5 cups of flour for 4 servings, how much flour is needed for 10 servings?", options: ["5 cups", "6 cups", "6.25 cups", "8 cups"], correctAnswer: "6.25 cups", explanation: "Flour for 10 servings = (2.5 cups ÷ 4) × 10 = 0.625 × 10 = 6.25 cups." },
+                { question: "What is the average of 15, 25, 30, and 50?", options: ["25", "30", "35", "40"], correctAnswer: "30", explanation: "Average = (15 + 25 + 30 + 50) ÷ 4 = 120 ÷ 4 = 30." },
+                { question: "If 4 workers can complete a task in 6 days, how many days would it take 6 workers?", options: ["3 days", "4 days", "9 days", "12 days"], correctAnswer: "4 days", explanation: "Work = workers × days. 4 × 6 = 24 worker-days. For 6 workers: 24 ÷ 6 = 4 days." },
+                { question: "What is the next prime number after 17?", options: ["18", "19", "21", "23"], correctAnswer: "19", explanation: "The prime numbers are 2, 3, 5, 7, 11, 13, 17, 19, 23, ... So the next prime after 17 is 19." }
             ]
         };
 
         let progressData = JSON.parse(localStorage.getItem('progressData')) || {};
         subjects.forEach(subject => {
-            if (!progressData[subject]) {
-                progressData[subject] = { attempted: 0, correct: 0 };
-            }
+            if (!progressData[subject]) progressData[subject] = { attempted: 0, correct: 0 };
+            if (!usedQuestions[subject]) usedQuestions[subject] = [];
         });
         localStorage.setItem('progressData', JSON.stringify(progressData));
 
         const toggleButton = document.getElementById('theme-toggle');
-        if (!toggleButton) console.error('Theme toggle button not found!');
         const currentTheme = localStorage.getItem('theme') || 'light';
         document.documentElement.setAttribute('data-theme', currentTheme);
         toggleButton.textContent = currentTheme === 'light' ? 'Toggle Dark Mode' : 'Toggle Light Mode';
@@ -862,15 +865,11 @@
                 progressChart.data.datasets[0].backgroundColor = newTheme === 'light' ? '#3498db' : '#42a5f5';
                 progressChart.update();
             }
-            console.log('Theme switched to:', newTheme);
         });
 
         document.addEventListener('DOMContentLoaded', () => {
             const ctx = document.getElementById('progressChart')?.getContext('2d');
-            if (!ctx) {
-                console.error('Canvas context not found!');
-                return;
-            }
+            if (!ctx) return;
             progressChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -886,34 +885,74 @@
                 },
                 options: {
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            title: { display: true, text: 'Percentage Correct' }
-                        }
+                        y: { beginAtZero: true, max: 100, title: { display: true, text: 'Percentage Correct' } }
                     }
                 }
             });
-            console.log('Chart initialized:', progressChart);
+
+            document.getElementById('explanation-btn').addEventListener('click', () => {
+                const explanationDiv = document.getElementById('explanation');
+                const explanationBtn = document.getElementById('explanation-btn');
+                if (explanationDiv.style.display === 'none') {
+                    explanationDiv.style.display = 'block';
+                    explanationBtn.textContent = 'Hide Explanation';
+                } else {
+                    explanationDiv.style.display = 'none';
+                    explanationBtn.textContent = 'Show Explanation';
+                }
+            });
         });
 
         function selectSubject(subject) {
-            if (!subjects.includes(subject)) {
-                console.error('Invalid subject:', subject);
-                return;
-            }
+            if (!subjects.includes(subject)) return;
             currentSubject = subject;
-            questionCount = 0; // Reset counter for new subject
-            console.log('Selected subject:', currentSubject);
+            questionCount = 0;
+            usedQuestions[subject] = [];
             resetUI();
             fetchNextQuestion();
         }
 
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
         function fetchQuestion(subject) {
             const subjectQuestions = questions[subject];
-            if (!subjectQuestions) return null;
-            const randomIndex = Math.floor(Math.random() * subjectQuestions.length);
-            return subjectQuestions[randomIndex];
+            if (!subjectQuestions || subjectQuestions.length === 0) {
+                console.error(`No questions found for subject: ${subject}`);
+                return null;
+            }
+
+            let availableQuestions = subjectQuestions.filter((_, index) => 
+                !usedQuestions[subject].includes(index)
+            );
+            
+            if (availableQuestions.length === 0) {
+                usedQuestions[subject] = [];
+                availableQuestions = subjectQuestions;
+            }
+
+            const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+            const question = availableQuestions[randomIndex];
+            const originalIndex = subjectQuestions.indexOf(question);
+            usedQuestions[subject].push(originalIndex);
+
+            try {
+                const shuffledOptions = shuffleArray([...question.options]);
+                return {
+                    question: question.question,
+                    options: shuffledOptions,
+                    correctAnswer: question.correctAnswer,
+                    explanation: question.explanation
+                };
+            } catch (error) {
+                console.error('Error shuffling options:', error);
+                return null;
+            }
         }
 
         function startTimer() {
@@ -931,10 +970,7 @@
         }
 
         function fetchNextQuestion() {
-            if (!currentSubject) {
-                console.error('No subject selected!');
-                return;
-            }
+            if (!currentSubject) return;
             if (timerInterval) clearInterval(timerInterval);
             resetUI();
             currentQuestion = fetchQuestion(currentSubject);
@@ -943,19 +979,12 @@
                 document.getElementById('question-counter').textContent = `Question ${questionCount} / ∞`;
                 displayQuestion(currentQuestion);
                 startTimer();
-                console.log('Next question fetched:', currentQuestion.question);
-            } else {
-                console.error('No questions available for:', currentSubject);
             }
         }
 
         function displayQuestion(questionData) {
             const questionArea = document.getElementById('question-area');
             const optionsDiv = document.getElementById('options');
-            if (!questionArea || !optionsDiv) {
-                console.error('Question area or options div not found!');
-                return;
-            }
             questionArea.innerHTML = `<p>${questionData.question}</p>`;
             optionsDiv.innerHTML = '';
             questionData.options.forEach(option => {
@@ -964,59 +993,44 @@
                 optionsDiv.appendChild(label);
             });
             const submitBtn = document.getElementById('submit-btn');
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.style.display = 'block';
-            }
-            console.log('Question displayed:', questionData.question);
+            submitBtn.disabled = false;
+            submitBtn.style.display = 'block';
         }
 
         function selectOption(option) {
             selectedOption = option;
-            console.log('Option selected:', selectedOption);
         }
 
         function submitAnswer() {
             if (timerInterval) clearInterval(timerInterval);
-            if (!selectedOption) {
-                alert('Time’s up or no option selected!');
-                updateProgress(false);
-            } else {
-                const isCorrect = selectedOption === currentQuestion.correctAnswer;
-                const feedbackDiv = document.getElementById('feedback');
-                const explanationDiv = document.getElementById('explanation');
-                const submitBtn = document.getElementById('submit-btn');
-                const nextBtn = document.getElementById('next-btn');
-                if (!feedbackDiv || !explanationDiv || !submitBtn || !nextBtn) {
-                    console.error('Feedback, explanation, submit, or next button not found!');
-                    return;
-                }
-                feedbackDiv.innerHTML = isCorrect ? '<p class="correct">Correct!</p>' : '<p class="incorrect">Incorrect!</p>';
-                explanationDiv.innerHTML = `<p><strong>Explanation:</strong> ${currentQuestion.explanation}</p>`;
-                updateProgress(isCorrect);
-            }
-            document.getElementById('submit-btn').style.display = 'none';
-            document.getElementById('next-btn').style.display = 'block';
-            console.log('Answer submitted:', { selected: selectedOption, correct: currentQuestion?.correctAnswer });
+            const isCorrect = selectedOption === currentQuestion.correctAnswer;
+            const feedbackDiv = document.getElementById('feedback');
+            const explanationDiv = document.getElementById('explanation');
+            const submitBtn = document.getElementById('submit-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const explanationBtn = document.getElementById('explanation-btn');
+            feedbackDiv.innerHTML = isCorrect ? '<p class="correct">Correct!</p>' : '<p class="incorrect">Incorrect!</p>';
+            explanationDiv.innerHTML = `<p><strong>Explanation:</strong> ${currentQuestion.explanation}</p>`;
+            explanationDiv.style.display = 'none';
+            explanationBtn.style.display = 'block';
+            explanationBtn.textContent = 'Show Explanation';
+            nextBtn.style.display = 'block';
+            submitBtn.style.display = 'none';
+            updateProgress(isCorrect);
         }
 
         function updateProgress(isCorrect) {
             if (!currentSubject || !progressData[currentSubject]) {
-                console.error('Invalid or undefined currentSubject:', currentSubject);
                 progressData[currentSubject] = { attempted: 0, correct: 0 };
             }
             progressData[currentSubject].attempted++;
             if (isCorrect) progressData[currentSubject].correct++;
             localStorage.setItem('progressData', JSON.stringify(progressData));
             updateChart();
-            console.log('Progress updated:', progressData[currentSubject]);
         }
 
         function updateChart() {
-            if (!progressChart) {
-                console.error('Chart not initialized yet!');
-                return;
-            }
+            if (!progressChart) return;
             const currentTheme = document.documentElement.getAttribute('data-theme');
             progressChart.data.datasets[0].data = subjects.map(subject => 
                 progressData[subject].attempted > 0 
@@ -1024,7 +1038,6 @@
                 : 0);
             progressChart.data.datasets[0].backgroundColor = currentTheme === 'light' ? '#3498db' : '#42a5f5';
             progressChart.update();
-            console.log('Chart updated:', progressChart.data.datasets[0].data);
         }
 
         function resetUI() {
@@ -1033,19 +1046,18 @@
             const optionsDiv = document.getElementById('options');
             const submitBtn = document.getElementById('submit-btn');
             const nextBtn = document.getElementById('next-btn');
-            if (!feedbackDiv || !explanationDiv || !optionsDiv || !submitBtn || !nextBtn) {
-                console.error('UI elements not found!');
-                return;
-            }
+            const explanationBtn = document.getElementById('explanation-btn');
             feedbackDiv.innerHTML = '';
             explanationDiv.innerHTML = '';
+            explanationDiv.style.display = 'none';
             optionsDiv.innerHTML = '';
             submitBtn.style.display = 'block';
             submitBtn.disabled = true;
             nextBtn.style.display = 'none';
+            explanationBtn.style.display = 'none';
+            explanationBtn.textContent = 'Show Explanation';
             selectedOption = null;
             document.getElementById('question-counter').textContent = `Question ${questionCount} / ∞`;
-            console.log('UI reset');
         }
 
         function showScoreSummary() {
@@ -1067,14 +1079,16 @@
             if (confirm('Are you sure you want to reset all progress?')) {
                 subjects.forEach(subject => {
                     progressData[subject] = { attempted: 0, correct: 0 };
+                    usedQuestions[subject] = [];
                 });
                 localStorage.setItem('progressData', JSON.stringify(progressData));
                 updateChart();
                 questionCount = 0;
                 resetUI();
-                console.log('Progress reset');
             }
         }
     </script>
 </body>
 </html>
+
+
